@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6a11cb">
+    <title>Cami Candy - Vendedor</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Estilos -->
+    <link rel="stylesheet" href="css/vendedor.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- Configuración Firebase -->
+    <script src="js/config.js"></script>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="vendor-header">
+        <div class="vendor-logo">
+            <i class="fas fa-candy-cane"></i>
+            <h1>Cami <span>Candy</span></h1>
+        </div>
+        <div class="vendor-status">
+            <span class="status-dot"></span>
+            <span>Conectado</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="vendor-container">
+        <!-- Products Section -->
+        <section class="products-section">
+            <div class="section-header">
+                <h2><i class="fas fa-boxes"></i> Productos</h2>
+                <span class="product-count" id="productCount">0 disponibles</span>
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                <!-- Los productos se cargarán aquí -->
+            </div>
+        </section>
+
+        <!-- Cart Section -->
+        <section class="cart-section">
+            <div class="section-header">
+                <h2><i class="fas fa-shopping-cart"></i> Carrito</h2>
+            </div>
+
+            <div class="cart-items" id="cartItems">
+                <div class="cart-empty">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>Carrito vacío</p>
+                    <p style="font-size: 0.85rem;">Toca un producto para agregar</p>
+                </div>
+            </div>
+
+            <div class="cart-totals">
+                <div class="total-row">
+                    <span>Subtotal:</span>
+                    <span id="subtotal">$0.00</span>
+                </div>
+                <div class="total-row">
+                    <span>Impuesto:</span>
+                    <span id="tax">$0.00</span>
+                </div>
+                <div class="total-row final">
+                    <span>TOTAL:</span>
+                    <span id="total">$0.00</span>
+                </div>
+            </div>
+
+            <div class="cart-actions">
+                <button class="btn btn-success" id="completeSaleBtn" disabled>
+                    <i class="fas fa-check-circle"></i> Cobrar
+                </button>
+                <button class="btn btn-danger" id="cancelSaleBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal de Pago -->
+    <div class="modal-overlay" id="paymentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-cash-register"></i> Completar Venta</h3>
+                <button class="modal-close" id="closePaymentModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <p style="font-size: 0.9rem; color: #666;">Total a cobrar:</p>
+                    <p style="font-size: 2rem; font-weight: 700; color: var(--secondary-color);" id="paymentTotal">$0.00
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Nombre del Cliente *</label>
+                    <input type="text" id="customerName" placeholder="Ej: María García" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-credit-card"></i> Método de Pago *</label>
+                    <div class="payment-options">
+                        <div class="payment-option" data-method="efectivo">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Efectivo</span>
+                        </div>
+                        <div class="payment-option" data-method="transferencia">
+                            <i class="fas fa-exchange-alt"></i>
+                            <span>Transferencia</span>
+                        </div>
+                        <div class="payment-option" data-method="deposito">
+                            <i class="fas fa-university"></i>
+                            <span>Depósito</span>
+                        </div>
+                        <div class="payment-option" data-method="credito">
+                            <i class="fas fa-handshake"></i>
+                            <span>A Crédito</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="confirmSaleBtn" style="flex: 1;">
+                    <i class="fas fa-check"></i> Confirmar Venta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Recibo -->
+    <div class="modal-overlay" id="receiptModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-receipt"></i> Venta Completada</h3>
+                <button class="modal-close" id="closeReceiptModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="receipt-container" id="receiptContent">
+                    <!-- El contenido del recibo se genera dinámicamente -->
+                </div>
+
+                <div class="receipt-actions">
+                    <button class="btn btn-primary" id="downloadReceiptBtn">
+                        <i class="fas fa-download"></i> Descargar
+                    </button>
+                    <button class="btn btn-whatsapp" id="whatsappReceiptBtn">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-success" id="newSaleBtn" style="flex: 1;">
+                    <i class="fas fa-plus"></i> Nueva Venta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Principal -->
+    <script src="js/vendedor-pos.js"></script>
+</body>
+
+</html>
