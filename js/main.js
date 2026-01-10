@@ -124,3 +124,18 @@ window.onerror = function (msg, url, lineNo, columnNo, error) {
 window.addEventListener('unhandledrejection', function (event) {
     console.error('Promesa rechazada:', event.reason);
 });
+
+/**
+ * Cierra la sesión del usuario
+ */
+function logout() {
+    if (confirm('¿Estás seguro de cerrar sesión?')) {
+        localStorage.removeItem('camicandy_logged');
+        localStorage.removeItem('camicandy_user');
+        localStorage.removeItem('camicandy_loginTime');
+        window.location.href = 'login.html';
+    }
+}
+
+// Hacer logout global
+window.logout = logout;

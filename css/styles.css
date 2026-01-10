@@ -38,7 +38,26 @@ body {
 
 .sidebar {
     width: var(--sidebar-width);
-    background: linear-gradient(180deg, var(--secondary-color), #2575fc);
+    /* Fondo original morado/azul con confeti de colores */
+    background:
+        /* Confeti - puntos de colores */
+        radial-gradient(circle at 10% 20%, #ffeb3b 2px, transparent 2px),
+        radial-gradient(circle at 30% 40%, #4caf50 2px, transparent 2px),
+        radial-gradient(circle at 50% 10%, #00bcd4 2px, transparent 2px),
+        radial-gradient(circle at 70% 30%, #ff9800 2px, transparent 2px),
+        radial-gradient(circle at 90% 50%, #e91e63 2px, transparent 2px),
+        radial-gradient(circle at 20% 60%, #ffeb3b 2px, transparent 2px),
+        radial-gradient(circle at 40% 80%, #00bcd4 2px, transparent 2px),
+        radial-gradient(circle at 60% 70%, #ff5722 2px, transparent 2px),
+        radial-gradient(circle at 80% 90%, #4caf50 2px, transparent 2px),
+        radial-gradient(circle at 15% 85%, #ffc107 2px, transparent 2px),
+        radial-gradient(circle at 85% 15%, #e91e63 2px, transparent 2px),
+        radial-gradient(circle at 45% 55%, #ffeb3b 2px, transparent 2px),
+        /* Degradado original morado/azul de fondo */
+        linear-gradient(180deg, var(--secondary-color), #2575fc);
+    background-size: 100px 100px, 100px 100px, 100px 100px, 100px 100px, 100px 100px,
+        100px 100px, 100px 100px, 100px 100px, 100px 100px, 100px 100px,
+        100px 100px, 100px 100px, 100% 100%;
     color: white;
     position: fixed;
     height: 100vh;

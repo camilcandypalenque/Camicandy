@@ -19,6 +19,14 @@
 </head>
 
 <body>
+    <!-- Verificación de login -->
+    <script>
+        // Verificar si el usuario está logueado
+        if (localStorage.getItem('camicandy_logged') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -43,6 +51,18 @@
                 <i class="fas fa-cash-register"></i>
                 <span>Punto de Venta</span>
             </div>
+            <div class="menu-item" data-section="clients">
+                <i class="fas fa-users"></i>
+                <span>Clientes</span>
+            </div>
+            <div class="menu-item" data-section="routes">
+                <i class="fas fa-route"></i>
+                <span>Rutas</span>
+            </div>
+            <div class="menu-item" data-section="expenses">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Gastos</span>
+            </div>
             <div class="menu-item" data-section="reports">
                 <i class="fas fa-chart-bar"></i>
                 <span>Reportes</span>
@@ -60,10 +80,14 @@
                 <i class="fas fa-question-circle"></i>
                 <span>¿Cómo utilizar?</span>
             </div>
+            <div class="menu-item" onclick="logout()" style="color: #ff6b6b; cursor: pointer;">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Cerrar Sesión</span>
+            </div>
         </div>
 
         <div class="sidebar-footer">
-            <p>Cami Candy v1.0</p>
+            <p>Cami Candy v2.0</p>
             <p>© 2024 Todos los derechos reservados</p>
         </div>
     </div>
@@ -113,10 +137,16 @@
                         </div>
                         <div class="form-group">
                             <label for="productType">Tipo de Producto *</label>
-                            <select id="productType">
-                                <option value="concentrado">Concentrado de Michelada</option>
-                                <option value="embolsado">Producto Embolsado</option>
-                            </select>
+                            <div style="display: flex; gap: 10px;">
+                                <select id="productType" style="flex: 1;">
+                                    <option value="concentrado">Concentrado de Michelada</option>
+                                    <option value="embolsado">Producto Embolsado</option>
+                                </select>
+                                <button type="button" class="btn btn-info" onclick="openCategoryModal()"
+                                    style="padding: 8px 12px;" title="Gestionar Categorías">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -126,8 +156,23 @@
                             <input type="number" id="productPrice" min="0" step="0.01" placeholder="0.00">
                         </div>
                         <div class="form-group">
-                            <label for="productCost">Costo ($) *</label>
+                            <label for="productCost">Costo ($) <small style="color: #888;">(opcional)</small></label>
                             <input type="number" id="productCost" min="0" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="costType">Tipo de Costo</label>
+                            <select id="costType">
+                                <option value="unit">Por Unidad</option>
+                                <option value="batch">Por Lote/Cantidad</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="batchSizeGroup" style="display: none;">
+                            <label for="batchSize">Unidades por Lote</label>
+                            <input type="number" id="batchSize" min="1" placeholder="Ej: 100">
+                            <small style="color: #888;">Si el costo es por lote, ¿cuántas unidades incluye?</small>
                         </div>
                     </div>
 
@@ -139,6 +184,45 @@
                         <div class="form-group">
                             <label for="minStock">Inventario Mínimo (Alerta) *</label>
                             <input type="number" id="minStock" min="0" placeholder="10" value="10">
+                        </div>
+                    </div>
+
+                    <!-- Fecha de Caducidad -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expirationDate">
+                                <i class="fas fa-calendar-times" style="color: #dc3545;"></i> Fecha de Caducidad
+                                <small style="color: #888;">(opcional)</small>
+                            </label>
+                            <input type="date" id="expirationDate">
+                            <small style="color: #888;">Se mostrará alerta 15 días antes de caducar</small>
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div id="expirationPreview"
+                                style="padding: 10px; background: #f8f9fa; border-radius: 8px; min-height: 40px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Código de barras provisional -->
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label for="productBarcode">
+                                <i class="fas fa-barcode"></i> Código de Barras (Provisional)
+                            </label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="productBarcode" placeholder="Se generará automáticamente"
+                                    readonly
+                                    style="background: #f0f0f0; font-family: monospace; font-size: 1.1rem; letter-spacing: 2px;">
+                                <button type="button" class="btn btn-info" onclick="generateBarcode()"
+                                    style="padding: 8px 15px;" title="Regenerar código">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <small style="color: #666; margin-top: 5px; display: block;">
+                                <i class="fas fa-info-circle"></i> Este código es provisional. Podrás actualizarlo con
+                                tu código oficial después.
+                            </small>
                         </div>
                     </div>
 
@@ -156,6 +240,7 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
+                                <th>Código</th>
                                 <th>Nombre</th>
                                 <th>Tipo</th>
                                 <th>Precio</th>
@@ -306,6 +391,9 @@
                     <button class="tab-btn active" data-tab="dailyReport">
                         <i class="fas fa-calendar-day"></i> Reporte Diario
                     </button>
+                    <button class="tab-btn" data-tab="pendingReport">
+                        <i class="fas fa-clock"></i> Ventas Pendientes
+                    </button>
                     <button class="tab-btn" data-tab="salesReport">
                         <i class="fas fa-shopping-cart"></i> Reporte de Ventas
                     </button>
@@ -369,6 +457,48 @@
                         style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: var(--border-radius);">
                         <h4><i class="fas fa-chart-pie"></i> Resumen del Día</h4>
                         <div id="dailySummaryDetails"></div>
+                    </div>
+                </div>
+
+                <!-- Ventas Pendientes (A Crédito) -->
+                <div class="report-content" id="pendingReport">
+                    <h3 class="section-title">
+                        <i class="fas fa-clock"></i> Ventas Pendientes (A Crédito)
+                    </h3>
+
+                    <div class="alert alert-warning" style="margin-bottom: 20px;">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            Estas son ventas que aún no han sido pagadas. El inventario ya fue descontado pero el dinero
+                            no se ha recibido.
+                        </div>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table class="products-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha Venta</th>
+                                    <th>ID</th>
+                                    <th>Cliente</th>
+                                    <th>Productos</th>
+                                    <th>Total</th>
+                                    <th>Fecha Pago</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingReportBody">
+                                <!-- Ventas pendientes se cargarán aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div
+                        style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #fff3cd, #ffeaa7); border-radius: var(--border-radius); border: 1px solid #ffc107;">
+                        <h4><i class="fas fa-coins"></i> Resumen de Créditos</h4>
+                        <div id="pendingSummaryDetails">
+                            <p>Carga el reporte para ver el resumen de créditos pendientes.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -529,6 +659,212 @@
                     <div id="monthlyTopProducts" style="margin-top: 15px;">
                         <!-- Top productos del mes se cargarán aquí -->
                     </div>
+                </div>
+            </section>
+
+            <!-- Clients Section -->
+            <section id="clientsSection" class="content-section">
+                <h2 class="section-title">
+                    <i class="fas fa-users"></i> Cartelera de Clientes
+                </h2>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>Gestión de Clientes:</strong> Administra tu cartelera de clientes con datos de contacto,
+                        rutas asignadas y créditos pendientes.
+                    </div>
+                </div>
+
+                <!-- Barra de herramientas -->
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+                    <button class="btn btn-primary" onclick="openAdminClientModal()">
+                        <i class="fas fa-plus"></i> Nuevo Cliente
+                    </button>
+                    <div style="flex: 1; min-width: 200px;">
+                        <input type="text" id="adminClientSearch" placeholder="🔍 Buscar cliente..."
+                            style="width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 8px;">
+                    </div>
+                    <select id="adminRouteFilter"
+                        style="padding: 10px; border: 2px solid #eee; border-radius: 8px; min-width: 150px;">
+                        <option value="">Todas las rutas</option>
+                    </select>
+                </div>
+
+                <!-- Estadísticas de clientes -->
+                <div class="report-summary-cards" style="margin-bottom: 20px;">
+                    <div class="summary-card">
+                        <h4>Total Clientes</h4>
+                        <div class="value" id="totalClientsCount">0</div>
+                        <div class="subtext">Registrados</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Con Crédito</h4>
+                        <div class="value" id="clientsWithCreditCount">0</div>
+                        <div class="subtext" id="totalCreditAmount">$0.00</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Rutas Activas</h4>
+                        <div class="value" id="activeRoutesCount">0</div>
+                        <div class="subtext">Zonas de venta</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Nuevos este Mes</h4>
+                        <div class="value" id="newClientsMonth">0</div>
+                        <div class="subtext">Clientes agregados</div>
+                    </div>
+                </div>
+
+                <!-- Tabla de clientes -->
+                <div style="overflow-x: auto;">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th>Local</th>
+                                <th>Dueño</th>
+                                <th>Teléfono</th>
+                                <th>Ruta</th>
+                                <th>Dirección</th>
+                                <th>Crédito</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminClientsTableBody">
+                            <!-- Clientes se cargarán aquí -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Routes Section -->
+            <section id="routesSection" class="content-section">
+                <h2 class="section-title">
+                    <i class="fas fa-route"></i> Gestión de Rutas
+                </h2>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>Rutas de Distribución:</strong> Administra las zonas geográficas donde vendes tus
+                        productos. Cada ruta puede tener precios diferentes.
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="openRouteModal()">
+                        <i class="fas fa-plus"></i> Nueva Ruta
+                    </button>
+                </div>
+
+                <!-- Lista de rutas -->
+                <div id="routesList"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                    <!-- Las rutas se cargarán aquí -->
+                </div>
+            </section>
+
+            <!-- Expenses Section -->
+            <section id="expensesSection" class="content-section">
+                <h2 class="section-title">
+                    <i class="fas fa-money-bill-wave"></i> Control de Gastos
+                </h2>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <strong>Gastos del Negocio:</strong> Registra todos los gastos para calcular tus ganancias
+                        reales.
+                    </div>
+                </div>
+
+                <!-- Formulario de nuevo gasto -->
+                <div class="product-form" style="margin-bottom: 30px;">
+                    <h3><i class="fas fa-plus-circle"></i> Registrar Nuevo Gasto</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expenseCategory">Categoría *</label>
+                            <select id="expenseCategory">
+                                <option value="">-- Seleccionar --</option>
+                                <option value="envios">📦 Envíos</option>
+                                <option value="gasolina">⛽ Gasolina</option>
+                                <option value="bolsas">🛍️ Bolsas/Empaque</option>
+                                <option value="sellos">🎯 Sellos/Etiquetas</option>
+                                <option value="sueldos">💰 Sueldos</option>
+                                <option value="otros">📋 Otros</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="expenseAmount">Monto ($) *</label>
+                            <input type="number" id="expenseAmount" min="0" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expenseDate">Fecha</label>
+                            <input type="date" id="expenseDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="expenseRoute">Ruta (opcional)</label>
+                            <select id="expenseRoute">
+                                <option value="">-- Sin ruta específica --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label for="expenseDescription">Descripción</label>
+                            <input type="text" id="expenseDescription" placeholder="Ej: Gasolina ruta Palenque">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveExpense()">
+                        <i class="fas fa-save"></i> Registrar Gasto
+                    </button>
+                </div>
+
+                <!-- Resumen de gastos -->
+                <div class="report-summary-cards" style="margin-bottom: 20px;">
+                    <div class="summary-card" style="border-top-color: #e74c3c;">
+                        <h4>Gastos Hoy</h4>
+                        <div class="value" id="expensesToday">$0.00</div>
+                        <div class="subtext" id="expensesTodayCount">0 registros</div>
+                    </div>
+                    <div class="summary-card" style="border-top-color: #f39c12;">
+                        <h4>Gastos del Mes</h4>
+                        <div class="value" id="expensesMonth">$0.00</div>
+                        <div class="subtext" id="expensesMonthCount">0 registros</div>
+                    </div>
+                    <div class="summary-card" style="border-top-color: #3498db;">
+                        <h4>Gasolina</h4>
+                        <div class="value" id="expensesGas">$0.00</div>
+                        <div class="subtext">Este mes</div>
+                    </div>
+                    <div class="summary-card" style="border-top-color: #27ae60;">
+                        <h4>Sueldos</h4>
+                        <div class="value" id="expensesSalary">$0.00</div>
+                        <div class="subtext">Este mes</div>
+                    </div>
+                </div>
+
+                <!-- Tabla de gastos recientes -->
+                <h3 class="section-title">
+                    <i class="fas fa-list"></i> Gastos Recientes
+                </h3>
+                <div style="overflow-x: auto;">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Categoría</th>
+                                <th>Descripción</th>
+                                <th>Ruta</th>
+                                <th>Monto</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expensesTableBody">
+                            <!-- Gastos se cargarán aquí -->
+                        </tbody>
+                    </table>
                 </div>
             </section>
 
@@ -1035,9 +1371,52 @@
         </div>
     </div>
 
+    <!-- Modal para gestionar categorías de productos -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-tags"></i> Gestionar Categorías</h3>
+                <button class="close-modal" onclick="closeCategoryModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <!-- Agregar nueva categoría -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px; color: var(--secondary-color);">
+                        <i class="fas fa-plus"></i> Nueva Categoría
+                    </h4>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="newCategoryName" placeholder="Nombre de la categoría"
+                            style="flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                        <button class="btn btn-success" onclick="addCategory()" style="padding: 10px 20px;">
+                            <i class="fas fa-plus"></i> Agregar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lista de categorías -->
+                <h4 style="margin-bottom: 15px; color: var(--secondary-color);">
+                    <i class="fas fa-list"></i> Categorías Existentes
+                </h4>
+                <div id="categoryList" style="max-height: 300px; overflow-y: auto;">
+                    <!-- Las categorías se cargarán aquí -->
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn btn-primary" onclick="closeCategoryModal()" style="padding: 10px 20px;">
+                        <i class="fas fa-check"></i> Listo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts JavaScript -->
     <script src="js/config.js"></script>
     <script src="js/firebase-service.js"></script>
+    <script src="js/routes-service.js"></script>
+    <script src="js/clients-service.js"></script>
+    <script src="js/expenses-service.js"></script>
+    <script src="js/expirations-service.js"></script>
     <script src="js/ui-sidebar.js"></script>
     <script src="js/inventory.js"></script>
     <script src="js/pos.js"></script>
@@ -1045,6 +1424,7 @@
     <script src="js/reports-part2.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/admin-clients.js"></script>
     <script src="js/main.js"></script>
 </body>
 

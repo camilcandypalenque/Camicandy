@@ -360,6 +360,159 @@ function exportReportToExcel() {
 
     UI.showNotification('Reporte exportado exitosamente.', 'success');
 }
+/**
+ * Carga el reporte de ventas pendientes (a crédito)
+ */
+async function loadPendingReport(settings) {
+    const pendingReportBody = document.getElementById('pendingReportBody');
+    if (!pendingReportBody) return;
+
+    const currencySymbol = settings?.currencySymbol || '$';
+
+    try {
+        const db = firebase.firestore();
+        const snapshot = await db.collection('sales')
+            .where('status', '==', 'pending')
+            .get();
+
+        const pendingSales = [];
+        snapshot.forEach(doc => {
+            pendingSales.push({ docId: doc.id, ...doc.data() });
+        });
+
+        if (pendingSales.length === 0) {
+            pendingReportBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-check-circle" style="font-size: 3rem; color: #28a745; margin-bottom: 15px;"></i>
+                        <p style="color: #28a745;">¡No hay ventas pendientes de pago!</p>
+                        <p style="color: #666; font-size: 0.9rem;">Todas las ventas a crédito han sido cobradas.</p>
+                    </td>
+                </tr>
+            `;
+
+            updatePendingSummary([], currencySymbol);
+            return;
+        }
+
+        // Ordenar por fecha de pago (más próximas primero)
+        pendingSales.sort((a, b) => {
+            if (!a.creditDueDate) return 1;
+            if (!b.creditDueDate) return -1;
+            return new Date(a.creditDueDate) - new Date(b.creditDueDate);
+        });
+
+        pendingReportBody.innerHTML = '';
+
+        pendingSales.forEach(sale => {
+            const saleDate = new Date(sale.date);
+            const formattedSaleDate = saleDate.toLocaleDateString('es-MX');
+
+            // Fecha de pago
+            let dueDateHTML = 'No especificada';
+            let isOverdue = false;
+            if (sale.creditDueDate) {
+                const dueDate = new Date(sale.creditDueDate + 'T00:00:00');
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                isOverdue = dueDate < today;
+                dueDateHTML = dueDate.toLocaleDateString('es-MX');
+            }
+
+            // Productos
+            const productsText = sale.details.map(d => `${d.quantity}x ${d.name}`).join(', ');
+
+            const row = document.createElement('tr');
+            row.style.backgroundColor = isOverdue ? '#fff5f5' : '';
+            row.innerHTML = `
+                <td>${formattedSaleDate}</td>
+                <td>#${sale.id}</td>
+                <td><strong>${sale.customerName || 'Sin nombre'}</strong></td>
+                <td style="max-width: 200px; font-size: 0.85rem;">${productsText}</td>
+                <td><strong style="color: var(--primary-color);">${currencySymbol}${sale.total.toFixed(2)}</strong></td>
+                <td>
+                    <span style="color: ${isOverdue ? '#dc3545' : '#856404'}; font-weight: ${isOverdue ? 'bold' : 'normal'};">
+                        ${isOverdue ? '⚠️ ' : ''}${dueDateHTML}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-success btn-sm" onclick="markAsPaid('${sale.docId}')" style="padding: 6px 12px;">
+                        <i class="fas fa-check"></i> Pagado
+                    </button>
+                </td>
+            `;
+
+            pendingReportBody.appendChild(row);
+        });
+
+        updatePendingSummary(pendingSales, currencySymbol);
+
+    } catch (error) {
+        console.error('Error cargando ventas pendientes:', error);
+        pendingReportBody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: #dc3545;">
+                    <i class="fas fa-exclamation-triangle"></i> Error al cargar ventas pendientes
+                </td>
+            </tr>
+        `;
+    }
+}
+
+/**
+ * Actualiza el resumen de ventas pendientes
+ */
+function updatePendingSummary(pendingSales, currencySymbol) {
+    const summaryDiv = document.getElementById('pendingSummaryDetails');
+    if (!summaryDiv) return;
+
+    const totalPending = pendingSales.reduce((sum, s) => sum + s.total, 0);
+    const overdueCount = pendingSales.filter(s => {
+        if (!s.creditDueDate) return false;
+        const dueDate = new Date(s.creditDueDate + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return dueDate < today;
+    }).length;
+
+    summaryDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;">
+            <div><strong>Ventas Pendientes:</strong> ${pendingSales.length}</div>
+            <div><strong style="color: #dc3545;">Vencidas:</strong> ${overdueCount}</div>
+            <div><strong>Total por Cobrar:</strong> <span style="color: var(--primary-color); font-size: 1.2rem;">${currencySymbol}${totalPending.toFixed(2)}</span></div>
+        </div>
+    `;
+}
+
+/**
+ * Marca una venta como pagada
+ */
+async function markAsPaid(docId) {
+    if (!confirm('¿Confirmas que esta venta ya fue pagada?')) return;
+
+    UI.showLoading('Actualizando venta...');
+
+    try {
+        const db = firebase.firestore();
+        await db.collection('sales').doc(docId).update({
+            status: 'completed',
+            paidAt: new Date().toISOString(),
+            paymentLabel: 'A Crédito (Pagado)'
+        });
+
+        UI.hideLoading();
+        UI.showNotification('✅ Venta marcada como pagada', 'success');
+
+        // Recargar la tabla de ventas pendientes
+        const settings = window.getSettings ? window.getSettings() : {};
+        loadPendingReport(settings);
+
+    } catch (error) {
+        console.error('Error actualizando venta:', error);
+        UI.hideLoading();
+        alert('Error al actualizar la venta. Intenta de nuevo.');
+    }
+}
 
 // Hacer funciones disponibles globalmente
 window.loadInventoryReport = loadInventoryReport;
@@ -367,3 +520,5 @@ window.loadProductsReport = loadProductsReport;
 window.viewSaleDetail = viewSaleDetail;
 window.exportReportToExcel = exportReportToExcel;
 window.loadMoreSales = loadMoreSales;
+window.loadPendingReport = loadPendingReport;
+window.markAsPaid = markAsPaid;

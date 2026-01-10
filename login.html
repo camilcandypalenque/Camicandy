@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Cami Candy</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Fondo con confeti */
+            background:
+                radial-gradient(circle at 10% 20%, #ffeb3b 3px, transparent 3px),
+                radial-gradient(circle at 30% 40%, #4caf50 3px, transparent 3px),
+                radial-gradient(circle at 50% 10%, #00bcd4 3px, transparent 3px),
+                radial-gradient(circle at 70% 30%, #ff9800 3px, transparent 3px),
+                radial-gradient(circle at 90% 50%, #e91e63 3px, transparent 3px),
+                radial-gradient(circle at 20% 60%, #ffeb3b 3px, transparent 3px),
+                radial-gradient(circle at 40% 80%, #00bcd4 3px, transparent 3px),
+                radial-gradient(circle at 60% 70%, #ff5722 3px, transparent 3px),
+                radial-gradient(circle at 80% 90%, #4caf50 3px, transparent 3px),
+                linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            background-size: 100px 100px, 100px 100px, 100px 100px, 100px 100px, 100px 100px,
+                100px 100px, 100px 100px, 100px 100px, 100px 100px, 100% 100%;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            margin: 20px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header i {
+            font-size: 3rem;
+            color: #ffa726;
+            margin-bottom: 15px;
+        }
+
+        .login-header h1 {
+            color: #6a11cb;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .login-header h1 span {
+            color: #ffa726;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group label i {
+            margin-right: 8px;
+            color: #6a11cb;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #6a11cb;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-10px);
+            }
+
+            75% {
+                transform: translateX(10px);
+            }
+        }
+
+        .vendor-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .vendor-link a {
+            color: #6a11cb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .vendor-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <i class="fas fa-candy-cane"></i>
+            <h1>Cami <span>Candy</span></h1>
+            <p>Sistema de Punto de Venta</p>
+        </div>
+
+        <div class="error-message" id="errorMessage">
+            <i class="fas fa-exclamation-circle"></i>
+            Usuario o contraseña incorrectos
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">
+                    <i class="fas fa-user"></i> Usuario
+                </label>
+                <input type="text" id="username" placeholder="Ingresa tu usuario" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i> Contraseña
+                </label>
+                <input type="password" id="password" placeholder="Ingresa tu contraseña" required>
+            </div>
+
+            <button type="submit" class="login-btn">
+                <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+            </button>
+        </form>
+
+        <div class="vendor-link">
+            <a href="vendedor.html">
+                <i class="fas fa-shopping-cart"></i> Acceso Vendedor (sin login)
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Credenciales (en producción esto debería estar en el servidor)
+        const USERS = {
+            'admin': 'admin12345'
+        };
+
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Verificar credenciales
+            if (USERS[username] && USERS[username] === password) {
+                // Login exitoso
+                localStorage.setItem('camicandy_logged', 'true');
+                localStorage.setItem('camicandy_user', username);
+                localStorage.setItem('camicandy_loginTime', new Date().toISOString());
+
+                // Redireccionar al panel principal
+                window.location.href = 'index.html';
+            } else {
+                // Login fallido
+                errorMessage.classList.add('show');
+                document.getElementById('password').value = '';
+
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 3000);
+            }
+        });
+
+        // Si ya está logueado, redirigir
+        if (localStorage.getItem('camicandy_logged') === 'true') {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+
+</html>

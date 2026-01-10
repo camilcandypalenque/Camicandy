@@ -111,6 +111,7 @@ async function loadReports() {
 
         // Cargar reportes específicos
         loadDailyReport(filteredSales, products, settings);
+        loadPendingReport(settings);  // Ventas a crédito pendientes
         loadSalesReport(filteredSales, products, settings);
         loadInventoryReport(products, settings);
         loadProductsReport(filteredSales, products, settings);
@@ -302,10 +303,19 @@ function loadDailyReport(filteredSales, products, settings) {
         const productsSummary = `<strong>${productsDescription}</strong><br><small style="color: #888;">(${concentrados} conc., ${embolsados} emb.)</small>`;
 
         // Info del cliente y pago si está disponible
+        const isPending = sale.status === 'pending';
+        const paymentStyle = isPending ? 'color: #dc3545; font-weight: bold;' : 'color: #6a11cb;';
         const customerInfo = sale.customerName ?
-            `<br><small style="color: #6a11cb;"><i class="fas fa-user"></i> ${sale.customerName} - ${sale.paymentLabel || 'N/A'}</small>` : '';
+            `<br><small style="${paymentStyle}"><i class="fas fa-user"></i> ${sale.customerName} - ${sale.paymentLabel || 'N/A'}</small>` : '';
+
+        // Botón de cobrar para ventas pendientes
+        const collectBtn = isPending ?
+            `<button class="btn btn-success btn-sm" onclick="markAsPaid('${sale.id}')" style="padding: 5px 10px; font-size: 0.8rem; margin-left: 5px;">
+                <i class="fas fa-check"></i> Cobrar
+            </button>` : '';
 
         const row = document.createElement('tr');
+        row.style.backgroundColor = isPending ? '#fff5f5' : '';
         row.innerHTML = `
             <td>${formattedTime}</td>
             <td>#${sale.id}</td>
@@ -316,6 +326,7 @@ function loadDailyReport(filteredSales, products, settings) {
                 <button class="btn btn-info btn-sm" onclick="viewSaleDetail(${sale.id})" style="padding: 5px 10px; font-size: 0.9rem;">
                     <i class="fas fa-eye"></i> Ver
                 </button>
+                ${collectBtn}
             </td>
         `;
 

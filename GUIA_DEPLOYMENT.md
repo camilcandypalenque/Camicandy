@@ -40,7 +40,7 @@
    cd C:\Users\curso\Desktop\PLATAFORMACAMILCANDY
    git init
    git add .
-   git commit -m "Cami Candy POS v1.0"
+   git commit -m "Cami Candy POS v2.0"
    git branch -M main
    git remote add origin https://github.com/TU-USUARIO/cami-candy-pos.git
    git push -u origin main
