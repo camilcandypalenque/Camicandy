@@ -107,6 +107,20 @@ function updateExpirationPreview() {
 }
 
 /**
+ * Busca un producto por ID de forma segura (maneja números y strings)
+ * @param {number|string} productId - ID del producto a buscar
+ * @returns {Object|null} El producto encontrado o null
+ */
+function findProductById(productId) {
+    const numericId = parseInt(productId);
+    return products.find(p =>
+        p.id === productId ||
+        p.id === numericId ||
+        p.docId === String(productId)
+    ) || null;
+}
+
+/**
  * Carga y muestra la tabla de productos
  */
 async function loadProductsTable() {
@@ -153,10 +167,16 @@ async function loadProductsTable() {
             }
         }
 
+        // Generar ID único para el SVG del código de barras
+        const barcodeId = `barcode-${product.id}`;
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${product.id}</td>
             <td style="font-family: monospace; font-size: 0.8rem;">${product.barcode || '-'}</td>
+            <td style="text-align: center; padding: 5px;">
+                ${product.barcode ? `<div style="display: flex; justify-content: center;"><svg id="${barcodeId}" style="max-width: 120px; height: 40px;"></svg></div>` : '-'}
+            </td>
             <td>${product.name}${expirationBadge}</td>
             <td><span class="badge ${badgeClass}">${badgeText}</span></td>
             <td>${settings.currencySymbol || '$'}${parseFloat(product.price).toFixed(2)}</td>
@@ -164,19 +184,37 @@ async function loadProductsTable() {
             <td class="${statusClass}">${product.stock}</td>
             <td><span class="${statusClass}">${statusText}</span></td>
             <td>
-                <button class="btn btn-warning" onclick="editProduct(${product.id})" style="padding: 5px 10px; font-size: 0.9rem;">
+                <button class="btn btn-warning" onclick="editProduct(${product.id})" style="padding: 5px 10px; font-size: 0.9rem;" title="Editar">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-primary" onclick="adjustStockModalOpen(${product.id})" style="padding: 5px 10px; font-size: 0.9rem;">
+                <button class="btn btn-primary" onclick="adjustStockModalOpen(${product.id})" style="padding: 5px 10px; font-size: 0.9rem;" title="Ajustar Stock">
                     <i class="fas fa-box"></i>
                 </button>
-                <button class="btn btn-danger" onclick="handleDeleteProduct(${product.id})" style="padding: 5px 10px; font-size: 0.9rem;">
+                <button class="btn btn-success" onclick="generateProductLabel(${product.id})" style="padding: 5px 10px; font-size: 0.9rem;" title="Generar Etiqueta">
+                    <i class="fas fa-tag"></i>
+                </button>
+                <button class="btn btn-danger" onclick="handleDeleteProduct(${product.id})" style="padding: 5px 10px; font-size: 0.9rem;" title="Eliminar">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
         `;
 
         productsTableBody.appendChild(row);
+
+        // Generar código de barras después de agregar al DOM
+        if (product.barcode && typeof JsBarcode !== 'undefined') {
+            try {
+                JsBarcode(`#${barcodeId}`, product.barcode, {
+                    format: "CODE128",
+                    width: 1.5,
+                    height: 35,
+                    displayValue: false,
+                    margin: 2
+                });
+            } catch (e) {
+                console.warn('Error generando código de barras para:', product.barcode);
+            }
+        }
     });
 }
 
@@ -276,31 +314,176 @@ async function handleAddProduct() {
 }
 
 /**
- * Edita un producto existente
+ * Edita un producto existente - Abre modal de edición
  */
-async function editProduct(productId) {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
+function editProduct(productId) {
+    const product = findProductById(productId);
 
-    const newName = prompt('Nuevo nombre del producto:', product.name);
-    if (newName === null) return;
+    if (!product) {
+        console.error('Producto no encontrado:', productId);
+        alert('Error: Producto no encontrado.');
+        return;
+    }
 
-    const trimmedName = newName.trim();
-    if (!trimmedName) {
-        alert('El nombre no puede estar vacío.');
+    const editProductBody = document.getElementById('editProductBody');
+    const editProductModal = document.getElementById('editProductModal');
+
+    if (!editProductBody || !editProductModal) {
+        console.error('Modal de edición no encontrado');
+        alert('Error: Modal de edición no disponible.');
+        return;
+    }
+
+    // Formatear fecha de caducidad si existe
+    let expirationValue = '';
+    if (product.expirationDate) {
+        const expDate = product.expirationDate.toDate ? product.expirationDate.toDate() : new Date(product.expirationDate);
+        expirationValue = expDate.toISOString().split('T')[0];
+    }
+
+    // Generar opciones de categorías
+    let categoryOptions = '';
+    productCategories.forEach(cat => {
+        const selected = product.type === cat.id ? 'selected' : '';
+        categoryOptions += `<option value="${cat.id}" ${selected}>${cat.name}</option>`;
+    });
+
+    editProductBody.innerHTML = `
+        <p style="margin-bottom: 20px; color: #666;">
+            <strong>ID:</strong> ${product.id} | 
+            <strong>Código:</strong> ${product.barcode || 'Sin código'}
+        </p>
+        
+        <div class="form-group">
+            <label for="editProductName"><i class="fas fa-tag"></i> Nombre del Producto *</label>
+            <input type="text" id="editProductName" class="form-control" value="${product.name}" 
+                   style="padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%;">
+        </div>
+        
+        <div class="form-group">
+            <label for="editProductType"><i class="fas fa-folder"></i> Tipo/Categoría</label>
+            <select id="editProductType" class="form-control" 
+                    style="padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%;">
+                ${categoryOptions}
+            </select>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+                <label for="editProductPrice"><i class="fas fa-dollar-sign"></i> Precio de Venta *</label>
+                <input type="number" id="editProductPrice" class="form-control" value="${product.price}" 
+                       min="0" step="0.01" style="padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%;">
+            </div>
+            <div class="form-group">
+                <label for="editProductCost"><i class="fas fa-coins"></i> Costo (opcional)</label>
+                <input type="number" id="editProductCost" class="form-control" value="${product.cost || ''}" 
+                       min="0" step="0.01" style="padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%;">
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+                <label for="editProductStock"><i class="fas fa-boxes"></i> Stock Actual</label>
+                <input type="number" id="editProductStock" class="form-control" value="${product.stock}" 
+                       readonly style="padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; background: #f5f5f5; cursor: not-allowed;">
+                <small style="color: #888;">Usa el botón de ajuste de inventario para cambiar el stock</small>
+            </div>
+            <div class="form-group">
+                <label for="editProductMinStock"><i class="fas fa-exclamation-triangle"></i> Stock Mínimo (Alerta)</label>
+                <input type="number" id="editProductMinStock" class="form-control" value="${product.minStock}" 
+                       min="0" style="padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%;">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="editProductExpiration"><i class="fas fa-calendar-alt"></i> Fecha de Caducidad (opcional)</label>
+            <input type="date" id="editProductExpiration" class="form-control" value="${expirationValue}" 
+                   style="padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%;">
+            <small style="color: #888;">Se mostrará alerta 15 días antes de caducar</small>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+            <button class="btn btn-success" id="saveEditProductBtn" style="flex: 1; padding: 15px; font-size: 1rem;">
+                <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+            <button class="btn btn-secondary" onclick="closeEditProductModal()" style="padding: 15px 20px;">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+        </div>
+    `;
+
+    // Agregar event listener al botón de guardar
+    setTimeout(() => {
+        document.getElementById('saveEditProductBtn').addEventListener('click', () => saveProductChanges(productId));
+    }, 100);
+
+    // Mostrar modal
+    editProductModal.classList.add('active');
+}
+
+/**
+ * Cierra el modal de edición de producto
+ */
+function closeEditProductModal() {
+    const editProductModal = document.getElementById('editProductModal');
+    if (editProductModal) {
+        editProductModal.classList.remove('active');
+    }
+}
+
+/**
+ * Guarda los cambios del producto editado
+ */
+async function saveProductChanges(productId) {
+    const name = document.getElementById('editProductName').value.trim();
+    const type = document.getElementById('editProductType').value;
+    const price = parseFloat(document.getElementById('editProductPrice').value);
+    const costInput = document.getElementById('editProductCost').value;
+    const cost = costInput ? parseFloat(costInput) : null;
+    const minStock = parseInt(document.getElementById('editProductMinStock').value);
+    const expirationDate = document.getElementById('editProductExpiration').value || null;
+
+    // Validaciones
+    if (!name) {
+        alert('Por favor ingresa un nombre para el producto.');
+        return;
+    }
+
+    if (isNaN(price) || price <= 0) {
+        alert('Por favor ingresa un precio válido mayor a 0.');
+        return;
+    }
+
+    if (cost !== null && (isNaN(cost) || cost < 0)) {
+        alert('Por favor ingresa un costo válido.');
+        return;
+    }
+
+    if (isNaN(minStock) || minStock < 0) {
+        alert('Por favor ingresa un inventario mínimo válido.');
         return;
     }
 
     UI.showLoading('Actualizando producto...');
 
     try {
-        const result = await FirebaseService.updateProduct(productId, { name: trimmedName });
+        const updates = {
+            name,
+            type,
+            price,
+            cost: cost || 0,
+            minStock,
+            expirationDate: expirationDate ? new Date(expirationDate) : null
+        };
+
+        const result = await FirebaseService.updateProduct(productId, updates);
 
         if (result.success) {
+            closeEditProductModal();
             await loadProductsTable();
-            UI.showNotification('Producto actualizado exitosamente.', 'success');
+            UI.showNotification(`Producto "${name}" actualizado exitosamente.`, 'success');
         } else {
-            alert('Error al actualizar el producto.');
+            alert('Error al actualizar el producto: ' + (result.error || 'Error desconocido'));
         }
     } catch (error) {
         console.error('Error actualizando producto:', error);
@@ -314,8 +497,12 @@ async function editProduct(productId) {
  * Elimina un producto
  */
 async function handleDeleteProduct(productId) {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
+    const product = findProductById(productId);
+    if (!product) {
+        console.error('Producto no encontrado para eliminar:', productId);
+        alert('Error: Producto no encontrado.');
+        return;
+    }
 
     let confirmMessage = `¿Estás seguro de que deseas eliminar el producto "${product.name}"?`;
     if (product.stock > 0) {
@@ -350,8 +537,12 @@ async function handleDeleteProduct(productId) {
  * Abre el modal para ajustar stock
  */
 function adjustStockModalOpen(productId) {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
+    const product = findProductById(productId);
+    if (!product) {
+        console.error('Producto no encontrado para ajustar stock:', productId);
+        alert('Error: Producto no encontrado.');
+        return;
+    }
 
     const modalBody = document.getElementById('modalBody');
     const adjustStockModal = document.getElementById('adjustStockModal');
@@ -406,8 +597,12 @@ async function adjustStock(productId) {
         return;
     }
 
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
+    const product = findProductById(productId);
+    if (!product) {
+        console.error('Producto no encontrado para ajustar:', productId);
+        alert('Error: Producto no encontrado.');
+        return;
+    }
 
     const previousStock = product.stock;
     let newStock = product.stock;
@@ -785,6 +980,8 @@ async function deleteCategory(categoryId) {
 window.initializeInventory = initializeInventory;
 window.loadProductsTable = loadProductsTable;
 window.editProduct = editProduct;
+window.closeEditProductModal = closeEditProductModal;
+window.saveProductChanges = saveProductChanges;
 window.handleDeleteProduct = handleDeleteProduct;
 window.adjustStockModalOpen = adjustStockModalOpen;
 window.adjustStock = adjustStock;
@@ -795,3 +992,176 @@ window.closeCategoryModal = closeCategoryModal;
 window.addCategory = addCategory;
 window.deleteCategory = deleteCategory;
 window.generateBarcode = generateBarcode;
+window.generateProductLabel = generateProductLabel;
+
+/**
+ * Genera etiquetas imprimibles para un producto
+ * El número de etiquetas es igual al stock del producto
+ */
+function generateProductLabel(productId) {
+    const product = findProductById(productId);
+
+    if (!product) {
+        alert('Producto no encontrado');
+        return;
+    }
+
+    const quantity = product.stock || 1;
+
+    // Preguntar cuántas etiquetas generar (sugerir el stock actual)
+    const userQuantity = prompt(`¿Cuántas etiquetas deseas generar?\n\nStock actual: ${product.stock} unidades`, quantity);
+
+    if (!userQuantity || isNaN(parseInt(userQuantity)) || parseInt(userQuantity) <= 0) {
+        return;
+    }
+
+    const labelCount = parseInt(userQuantity);
+
+    // Generar las etiquetas
+    let labelsHTML = '';
+    for (let i = 0; i < labelCount; i++) {
+        labelsHTML += `
+            <div class="label">
+                <div class="label-header">
+                    <span class="label-logo">🍬</span>
+                    <span class="label-company">Camil Candy</span>
+                </div>
+                <div class="label-product">${product.name}</div>
+                <div class="label-barcode">
+                    <svg id="label-barcode-${i}"></svg>
+                </div>
+            </div>
+        `;
+    }
+
+    // Crear ventana de impresión
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Etiquetas - ${product.name}</title>
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { 
+                    font-family: Arial, sans-serif;
+                    padding: 10px;
+                    background: #f5f5f5;
+                }
+                .print-header {
+                    text-align: center;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                    background: white;
+                    border-radius: 10px;
+                }
+                .print-header h2 { color: #6a11cb; margin-bottom: 10px; }
+                .print-header p { color: #666; }
+                .print-btn {
+                    background: linear-gradient(135deg, #ff6b8b, #6a11cb);
+                    color: white;
+                    border: none;
+                    padding: 15px 40px;
+                    font-size: 1.1rem;
+                    border-radius: 25px;
+                    cursor: pointer;
+                    margin: 10px;
+                }
+                .print-btn:hover { opacity: 0.9; }
+                .labels-container {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    justify-content: center;
+                }
+                .label {
+                    width: 200px;
+                    height: 120px;
+                    background: white;
+                    border: 2px solid #ddd;
+                    border-radius: 8px;
+                    padding: 10px;
+                    text-align: center;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    page-break-inside: avoid;
+                }
+                .label-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 5px;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 5px;
+                }
+                .label-logo { font-size: 1.2rem; }
+                .label-company { 
+                    font-weight: bold; 
+                    font-size: 0.9rem;
+                    color: #6a11cb;
+                }
+                .label-product {
+                    font-weight: bold;
+                    font-size: 0.85rem;
+                    color: #333;
+                    margin: 5px 0;
+                }
+                .label-barcode svg {
+                    max-width: 100%;
+                    height: 30px;
+                }
+                .label-price {
+                    font-weight: bold;
+                    font-size: 1rem;
+                    color: #ff6b8b;
+                }
+                @media print {
+                    .print-header { display: none; }
+                    body { background: white; padding: 0; }
+                    .labels-container { gap: 5px; }
+                    .label { 
+                        border: 1px solid #ccc;
+                        margin: 2px;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-header">
+                <h2>🏷️ Etiquetas de Producto</h2>
+                <p><strong>${product.name}</strong> - ${labelCount} etiquetas</p>
+                <button class="print-btn" onclick="window.print()">
+                    🖨️ Imprimir Etiquetas
+                </button>
+                <button class="print-btn" onclick="window.close()" style="background: #6c757d;">
+                    ❌ Cerrar
+                </button>
+            </div>
+            <div class="labels-container">
+                ${labelsHTML}
+            </div>
+            <script>
+                // Generar códigos de barras
+                window.onload = function() {
+                    for (let i = 0; i < ${labelCount}; i++) {
+                        try {
+                            JsBarcode('#label-barcode-' + i, '${product.barcode || product.id}', {
+                                format: "CODE128",
+                                width: 1.5,
+                                height: 30,
+                                displayValue: false,
+                                margin: 2
+                            });
+                        } catch(e) {
+                            console.warn('Error en código de barras', i);
+                        }
+                    }
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}

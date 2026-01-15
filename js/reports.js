@@ -8,11 +8,30 @@ let currentSalesPage = 1;
 const SALES_PER_PAGE = 20;
 
 /**
+ * Obtiene la fecha local en formato YYYY-MM-DD
+ * Evita problemas de zona horaria que ocurren con toISOString()
+ */
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+/**
  * Inicializa el módulo de reportes
  */
 function initializeReports() {
     setupReportsEventListeners();
     setDefaultDates();
+
+    // Cargar reportes automáticamente al inicializar
+    // Usamos un pequeño delay para asegurar que todos los elementos estén listos
+    setTimeout(() => {
+        loadReports();
+        console.log('📊 Reportes cargados automáticamente con fecha de hoy');
+    }, 500);
+
     console.log('✅ Módulo de reportes inicializado');
 }
 
@@ -51,18 +70,65 @@ function setupReportsEventListeners() {
 }
 
 /**
- * Establece las fechas por defecto
+ * Establece las fechas por defecto usando hora local
  */
 function setDefaultDates() {
-    const today = new Date().toISOString().split('T')[0];
-    const reportDate = document.getElementById('reportDate');
+    // Usar getLocalDateString para evitar problemas de zona horaria
+    const today = getLocalDateString();
     const startDate = document.getElementById('startDate');
     const endDate = document.getElementById('endDate');
 
-    if (reportDate) reportDate.value = today;
     if (startDate) startDate.value = today;
     if (endDate) endDate.value = today;
+
+    console.log('📅 Fechas establecidas a:', today);
 }
+
+/**
+ * Establece un rango rápido de fechas (Hoy, Ayer, Semana, Mes)
+ */
+function setQuickRange(range) {
+    const today = new Date();
+    const todayStr = getLocalDateString(today);
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+
+    let startDate = todayStr;
+    let endDate = todayStr;
+
+    switch (range) {
+        case 'hoy':
+            startDate = endDate = todayStr;
+            break;
+        case 'ayer':
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            startDate = endDate = getLocalDateString(yesterday);
+            break;
+        case 'semana':
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay());
+            startDate = getLocalDateString(startOfWeek);
+            endDate = todayStr;
+            break;
+        case 'mes':
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            startDate = getLocalDateString(startOfMonth);
+            endDate = todayStr;
+            break;
+    }
+
+    if (startDateInput) startDateInput.value = startDate;
+    if (endDateInput) endDateInput.value = endDate;
+
+    // Cargar reportes automáticamente al seleccionar rango rápido
+    loadReports();
+
+    console.log(`⚡ Rango rápido: ${range} (${startDate} - ${endDate})`);
+}
+
+// Exponer setQuickRange globalmente
+window.setQuickRange = setQuickRange;
 
 /**
  * Alterna la visibilidad del rango personalizado
@@ -129,45 +195,20 @@ async function loadReports() {
  */
 function filterSales(sales, products) {
     const filterType = document.getElementById('reportType')?.value || 'todos';
-    const filterRange = document.getElementById('reportRange')?.value || 'hoy';
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
 
     let filteredSales = [...sales];
-    let startDate, endDate;
 
-    // Aplicar filtro de rango de fechas
+    // Usar directamente los valores de los campos de fecha
     const today = new Date();
+    const todayStr = getLocalDateString(today);
+    const startDate = startDateInput?.value || todayStr;
+    const endDate = endDateInput?.value || todayStr;
 
-    switch (filterRange) {
-        case 'hoy':
-            startDate = endDate = today.toISOString().split('T')[0];
-            break;
-        case 'ayer':
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            startDate = endDate = yesterday.toISOString().split('T')[0];
-            break;
-        case 'semana':
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
-            startDate = startOfWeek.toISOString().split('T')[0];
-            endDate = today.toISOString().split('T')[0];
-            break;
-        case 'mes':
-            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-            startDate = startOfMonth.toISOString().split('T')[0];
-            endDate = today.toISOString().split('T')[0];
-            break;
-        case 'personalizado':
-            startDate = startDateInput?.value || today.toISOString().split('T')[0];
-            endDate = endDateInput?.value || today.toISOString().split('T')[0];
-            break;
-    }
-
-    // Filtrar por fecha
+    // Filtrar por fecha usando hora LOCAL
     filteredSales = filteredSales.filter(sale => {
-        const saleDate = new Date(sale.date).toISOString().split('T')[0];
+        const saleDate = getLocalDateString(new Date(sale.date));
         return saleDate >= startDate && saleDate <= endDate;
     });
 

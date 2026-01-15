@@ -90,30 +90,40 @@ body {
 }
 
 .sidebar-menu {
-    padding: 20px 0;
+    padding: 15px 10px;
 }
 
 .menu-item {
     display: flex;
     align-items: center;
-    padding: 15px 25px;
-    color: rgba(255, 255, 255, 0.8);
+    padding: 14px 20px;
+    margin: 6px 8px;
+    color: white;
     text-decoration: none;
     transition: all 0.3s ease;
-    border-left: 3px solid transparent;
+    border-left: 4px solid transparent;
     cursor: pointer;
+    /* Fondo más opaco para mucho mejor contraste */
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    letter-spacing: 0.3px;
 }
 
 .menu-item:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.35);
     color: white;
     border-left-color: var(--accent-color);
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .menu-item.active {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(255, 255, 255, 0.4);
     color: white;
     border-left-color: var(--accent-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .menu-item i {
@@ -123,7 +133,7 @@ body {
 }
 
 .menu-item span {
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .sidebar-footer {

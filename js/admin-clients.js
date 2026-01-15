@@ -462,12 +462,33 @@ function renderRoutesList() {
             ? '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Activa</span>'
             : '<span style="background: #6c757d; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Inactiva</span>';
 
+        // Generar badge de ajuste de precio
+        let priceAdjustBadge = '';
+        if (route.priceAdjustType && route.priceAdjustType !== 'none' && route.priceAdjustValue !== 0) {
+            const isPositive = route.priceAdjustValue > 0;
+            const color = isPositive ? '#dc3545' : '#28a745'; // rojo si sube, verde si baja
+            const icon = isPositive ? '↑' : '↓';
+            const symbol = route.priceAdjustType === 'percentage' ? '%' : '$';
+            const valueText = route.priceAdjustType === 'percentage'
+                ? `${isPositive ? '+' : ''}${route.priceAdjustValue}%`
+                : `${isPositive ? '+$' : '-$'}${Math.abs(route.priceAdjustValue).toFixed(2)}`;
+
+            priceAdjustBadge = `
+                <span style="background: ${color}15; color: ${color}; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; margin-left: 8px;">
+                    ${icon} ${valueText}
+                </span>
+            `;
+        }
+
         html += `
             <div style="background: white; padding: 20px; border-radius: var(--border-radius); box-shadow: var(--shadow); border-left: 4px solid #ff6b8b;">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                    <h4 style="margin: 0; color: #333;">
-                        <i class="fas fa-map-marker-alt" style="color: #ff6b8b;"></i> ${route.name}
-                    </h4>
+                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 5px;">
+                        <h4 style="margin: 0; color: #333;">
+                            <i class="fas fa-map-marker-alt" style="color: #ff6b8b;"></i> ${route.name}
+                        </h4>
+                        ${priceAdjustBadge}
+                    </div>
                     ${statusBadge}
                 </div>
                 <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">${route.description || 'Sin descripción'}</p>
@@ -518,27 +539,230 @@ function populateRouteFilters() {
  * Abre el modal de ruta
  */
 function openRouteModal(routeId = null) {
-    const existing = routeId ? adminRoutes.find(r => r.id === routeId) : null;
+    // Crear modal si no existe
+    let modal = document.getElementById('adminRouteModal');
+    if (!modal) {
+        modal = createRouteModal();
+        document.body.appendChild(modal);
+    }
 
-    const name = prompt('Nombre de la ruta:', existing?.name || '');
-    if (!name) return;
+    // Limpiar formulario
+    document.getElementById('adminEditRouteId').value = routeId || '';
+    document.getElementById('adminRouteName').value = '';
+    document.getElementById('adminRouteDescription').value = '';
 
-    const description = prompt('Descripción (opcional):', existing?.description || '');
+    // Limpiar campos de ajuste de precio
+    const priceTypeSelect = document.getElementById('adminRoutePriceType');
+    const priceValueInput = document.getElementById('adminRoutePriceValue');
+    if (priceTypeSelect) priceTypeSelect.value = 'none';
+    if (priceValueInput) priceValueInput.value = '0';
 
-    saveRoute(routeId, name.trim(), description?.trim() || '');
+    document.getElementById('adminRouteModalTitle').textContent = routeId ? 'Editar Ruta' : 'Nueva Ruta';
+
+    modal.style.display = 'flex';
+
+    // Actualizar vista previa después de que el modal sea visible
+    setTimeout(() => updateRoutePricePreview(), 100);
+}
+
+/**
+ * Crea el modal de rutas
+ */
+function createRouteModal() {
+    const modal = document.createElement('div');
+    modal.id = 'adminRouteModal';
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;';
+
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 15px; max-width: 550px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 id="adminRouteModalTitle" style="margin: 0; color: #333;"><i class="fas fa-route"></i> Nueva Ruta</h3>
+                <button onclick="closeRouteModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999;">&times;</button>
+            </div>
+            
+            <input type="hidden" id="adminEditRouteId">
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">
+                    <i class="fas fa-tag"></i> Nombre de la Ruta *
+                </label>
+                <input type="text" id="adminRouteName" placeholder="Ej: Palenque" 
+                       style="width: 100%; padding: 14px; border: 2px solid #ddd; border-radius: 10px; font-size: 1rem;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">
+                    <i class="fas fa-info-circle"></i> Descripción (opcional)
+                </label>
+                <textarea id="adminRouteDescription" placeholder="Ej: Zona centro de Palenque y alrededores" rows="2"
+                          style="width: 100%; padding: 14px; border: 2px solid #ddd; border-radius: 10px; font-size: 1rem; resize: vertical;"></textarea>
+            </div>
+            
+            <!-- Sección de Ajuste de Precios -->
+            <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid #dee2e6;">
+                <h4 style="margin: 0 0 15px 0; color: #333;">
+                    <i class="fas fa-dollar-sign" style="color: #28a745;"></i> Ajuste de Precios para esta Ruta
+                </h4>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #555; font-size: 0.9rem;">
+                            Tipo de Ajuste
+                        </label>
+                        <select id="adminRoutePriceType" onchange="updateRoutePricePreview()"
+                                style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;">
+                            <option value="none">Sin ajuste (precio base)</option>
+                            <option value="percentage">Porcentaje (%)</option>
+                            <option value="fixed">Cantidad fija ($)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #555; font-size: 0.9rem;">
+                            Valor del Ajuste
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="number" id="adminRoutePriceValue" value="0" step="0.5" 
+                                   onchange="updateRoutePricePreview()" oninput="updateRoutePricePreview()"
+                                   style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;">
+                            <span id="routePriceUnit" style="font-weight: bold; color: #666; min-width: 30px;">%</span>
+                        </div>
+                        <small style="color: #888;">Positivo = más caro, Negativo = más barato</small>
+                    </div>
+                </div>
+                
+                <!-- Vista previa del ajuste -->
+                <div id="routePricePreview" style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #666;"><i class="fas fa-calculator"></i> Ejemplo: Producto de $100</span>
+                        <span id="routePricePreviewResult" style="font-size: 1.2rem; font-weight: bold; color: #28a745;">→ $100.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 12px;">
+                <button onclick="closeRouteModal()" class="btn btn-secondary" style="flex: 1; padding: 14px; font-size: 1rem;">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button onclick="saveRouteFromModal()" class="btn btn-success" style="flex: 1; padding: 14px; font-size: 1rem;">
+                    <i class="fas fa-save"></i> Guardar Ruta
+                </button>
+            </div>
+        </div>
+    `;
+
+    return modal;
+}
+
+/**
+ * Cierra el modal de ruta
+ */
+function closeRouteModal() {
+    const modal = document.getElementById('adminRouteModal');
+    if (modal) modal.style.display = 'none';
+}
+
+/**
+ * Actualiza la vista previa del ajuste de precio
+ */
+function updateRoutePricePreview() {
+    const priceType = document.getElementById('adminRoutePriceType')?.value || 'none';
+    const priceValue = parseFloat(document.getElementById('adminRoutePriceValue')?.value) || 0;
+    const unitSpan = document.getElementById('routePriceUnit');
+    const previewSpan = document.getElementById('routePricePreviewResult');
+    const previewContainer = document.getElementById('routePricePreview');
+
+    if (!unitSpan || !previewSpan || !previewContainer) return;
+
+    const basePrice = 100; // Precio de ejemplo
+    let finalPrice = basePrice;
+    let borderColor = '#28a745'; // verde
+
+    if (priceType === 'percentage') {
+        unitSpan.textContent = '%';
+        finalPrice = basePrice * (1 + priceValue / 100);
+    } else if (priceType === 'fixed') {
+        unitSpan.textContent = '$';
+        finalPrice = basePrice + priceValue;
+    } else {
+        unitSpan.textContent = '';
+        finalPrice = basePrice;
+    }
+
+    // Cambiar color según si sube o baja
+    if (finalPrice > basePrice) {
+        borderColor = '#dc3545'; // rojo - más caro
+        previewSpan.style.color = '#dc3545';
+    } else if (finalPrice < basePrice) {
+        borderColor = '#28a745'; // verde - más barato
+        previewSpan.style.color = '#28a745';
+    } else {
+        borderColor = '#6c757d'; // gris - sin cambio
+        previewSpan.style.color = '#6c757d';
+    }
+
+    previewContainer.style.borderLeftColor = borderColor;
+
+    const arrow = finalPrice !== basePrice ? (finalPrice > basePrice ? '↑' : '↓') : '→';
+    previewSpan.textContent = `${arrow} $${finalPrice.toFixed(2)}`;
 }
 
 /**
  * Edita una ruta
  */
 function editRoute(routeId) {
+    const route = adminRoutes.find(r => r.id === routeId);
+    if (!route) {
+        alert('Ruta no encontrada');
+        return;
+    }
+
     openRouteModal(routeId);
+
+    setTimeout(() => {
+        document.getElementById('adminRouteName').value = route.name || '';
+        document.getElementById('adminRouteDescription').value = route.description || '';
+
+        // Cargar datos de ajuste de precio
+        const priceTypeSelect = document.getElementById('adminRoutePriceType');
+        const priceValueInput = document.getElementById('adminRoutePriceValue');
+
+        if (priceTypeSelect && priceValueInput) {
+            priceTypeSelect.value = route.priceAdjustType || 'none';
+            priceValueInput.value = route.priceAdjustValue || 0;
+            updateRoutePricePreview();
+        }
+    }, 100);
 }
 
 /**
- * Guarda una ruta
+ * Guarda la ruta desde el modal
  */
-async function saveRoute(routeId, name, description) {
+async function saveRouteFromModal() {
+    const routeId = document.getElementById('adminEditRouteId').value;
+    const name = document.getElementById('adminRouteName').value.trim();
+    const description = document.getElementById('adminRouteDescription').value.trim();
+    const priceAdjustType = document.getElementById('adminRoutePriceType')?.value || 'none';
+    const priceAdjustValue = parseFloat(document.getElementById('adminRoutePriceValue')?.value) || 0;
+
+    if (!name) {
+        UI.showNotification('El nombre de la ruta es obligatorio', 'error');
+        return;
+    }
+
+    await saveRoute(routeId, name, description, priceAdjustType, priceAdjustValue);
+    closeRouteModal();
+}
+
+/**
+ * Guarda una ruta con sus datos de ajuste de precio
+ * @param {string} routeId - ID de la ruta (null para nueva)
+ * @param {string} name - Nombre de la ruta
+ * @param {string} description - Descripción
+ * @param {string} priceAdjustType - Tipo de ajuste: 'none', 'percentage', 'fixed'
+ * @param {number} priceAdjustValue - Valor del ajuste (positivo o negativo)
+ */
+async function saveRoute(routeId, name, description, priceAdjustType = 'none', priceAdjustValue = 0) {
     try {
         const db = firebase.firestore();
         const id = routeId || name.toLowerCase().replace(/\s+/g, '_');
@@ -547,6 +771,8 @@ async function saveRoute(routeId, name, description) {
             id,
             name,
             description,
+            priceAdjustType: priceAdjustType || 'none',
+            priceAdjustValue: priceAdjustValue || 0,
             isActive: true,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
@@ -807,6 +1033,9 @@ window.saveAdminClient = saveAdminClient;
 window.editAdminClient = editAdminClient;
 window.deleteAdminClient = deleteAdminClient;
 window.openRouteModal = openRouteModal;
+window.closeRouteModal = closeRouteModal;
+window.saveRouteFromModal = saveRouteFromModal;
+window.updateRoutePricePreview = updateRoutePricePreview;
 window.editRoute = editRoute;
 window.toggleRoute = toggleRoute;
 window.saveExpense = saveExpense;

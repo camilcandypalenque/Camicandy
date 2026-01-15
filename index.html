@@ -16,6 +16,9 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- JsBarcode para generar códigos de barras -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
 
 <body>
@@ -241,6 +244,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Código</th>
+                                <th>Código de Barras</th>
                                 <th>Nombre</th>
                                 <th>Tipo</th>
                                 <th>Precio</th>
@@ -341,48 +345,99 @@
 
                 <!-- Filtros de Reportes -->
                 <div class="report-filters">
-                    <div class="filter-row">
+                    <div class="filter-row" style="flex-wrap: wrap; gap: 15px;">
+                        <!-- Fecha Inicio -->
                         <div class="filter-group">
-                            <label for="reportDate">Fecha del Reporte</label>
-                            <input type="date" id="reportDate" class="form-control">
+                            <label for="startDate"><i class="fas fa-calendar-alt" style="color: #667eea;"></i> Fecha
+                                Inicio</label>
+                            <input type="date" id="startDate" class="form-control" style="
+                                padding: 12px;
+                                border: 2px solid #e0e0e0;
+                                border-radius: 10px;
+                                font-size: 1rem;
+                                min-width: 160px;
+                            ">
                         </div>
+
+                        <!-- Fecha Fin -->
+                        <div class="filter-group">
+                            <label for="endDate"><i class="fas fa-calendar-alt" style="color: #764ba2;"></i> Fecha
+                                Fin</label>
+                            <input type="date" id="endDate" class="form-control" style="
+                                padding: 12px;
+                                border: 2px solid #e0e0e0;
+                                border-radius: 10px;
+                                font-size: 1rem;
+                                min-width: 160px;
+                            ">
+                        </div>
+
+                        <!-- Tipo de Producto -->
                         <div class="filter-group">
                             <label for="reportType">Tipo de Producto</label>
-                            <select id="reportType" class="form-control">
+                            <select id="reportType" class="form-control" style="padding: 12px; border-radius: 10px;">
                                 <option value="todos">Todos los productos</option>
                                 <option value="concentrado">Concentrados</option>
                                 <option value="embolsado">Embolsados</option>
                             </select>
                         </div>
-                        <div class="filter-group">
-                            <label for="reportRange">Rango de Fechas</label>
-                            <select id="reportRange" class="form-control">
-                                <option value="hoy">Hoy</option>
-                                <option value="ayer">Ayer</option>
-                                <option value="semana">Esta semana</option>
-                                <option value="mes">Este mes</option>
-                                <option value="personalizado">Personalizado</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <button class="btn btn-primary" id="generateReportBtn">
-                                <i class="fas fa-filter"></i> Filtrar Reporte
+
+                        <!-- Botón Aplicar -->
+                        <div class="filter-group"
+                            style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+                            <label style="visibility: hidden;">Acciones</label>
+                            <button class="btn" id="generateReportBtn" style="
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                color: white;
+                                padding: 12px 24px;
+                                font-size: 1.1rem;
+                                font-weight: 600;
+                                border: none;
+                                border-radius: 10px;
+                                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)';"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';">
+                                <i class="fas fa-sync-alt"></i> Aplicar Filtro
                             </button>
-                            <button class="btn btn-info" id="exportReportBtn" style="margin-top: 5px;">
-                                <i class="fas fa-file-excel"></i> Exportar a Excel
+                        </div>
+
+                        <!-- Exportar -->
+                        <div class="filter-group"
+                            style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+                            <label style="visibility: hidden;">Export</label>
+                            <button class="btn btn-info" id="exportReportBtn"
+                                style="padding: 12px 16px; border-radius: 10px;">
+                                <i class="fas fa-file-excel"></i> Exportar
                             </button>
                         </div>
                     </div>
 
-                    <div class="filter-row" id="customRangeRow" style="display: none;">
-                        <div class="filter-group">
-                            <label for="startDate">Fecha Inicio</label>
-                            <input type="date" id="startDate" class="form-control">
-                        </div>
-                        <div class="filter-group">
-                            <label for="endDate">Fecha Fin</label>
-                            <input type="date" id="endDate" class="form-control">
-                        </div>
+                    <!-- Botones de acceso rápido -->
+                    <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                        <span style="color: #666; font-weight: 500; display: flex; align-items: center;"><i
+                                class="fas fa-bolt" style="margin-right: 5px; color: #f39c12;"></i> Acceso
+                            rápido:</span>
+                        <button type="button" class="btn" onclick="setQuickRange('hoy')"
+                            style="padding: 6px 14px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 20px; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                            Hoy
+                        </button>
+                        <button type="button" class="btn" onclick="setQuickRange('ayer')"
+                            style="padding: 6px 14px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 20px; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                            Ayer
+                        </button>
+                        <button type="button" class="btn" onclick="setQuickRange('semana')"
+                            style="padding: 6px 14px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 20px; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                            Esta Semana
+                        </button>
+                        <button type="button" class="btn" onclick="setQuickRange('mes')"
+                            style="padding: 6px 14px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 20px; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                            Este Mes
+                        </button>
                     </div>
                 </div>
 
@@ -1354,6 +1409,19 @@
             </div>
             <div id="modalBody">
                 <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar producto -->
+    <div id="editProductModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-edit"></i> Editar Producto</h3>
+                <button class="close-modal" onclick="closeEditProductModal()">&times;</button>
+            </div>
+            <div id="editProductBody" style="padding: 20px;">
+                <!-- Contenido dinámico se carga desde JavaScript -->
             </div>
         </div>
     </div>
