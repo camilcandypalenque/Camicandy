@@ -330,7 +330,10 @@ function updateCartDisplay() {
         itemEl.innerHTML = `
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
-                <div class="cart-item-price">${settings.currencySymbol}${item.price.toFixed(2)} c/u</div>
+                <div class="cart-item-price" onclick="editItemPrice(${item.productId})" style="cursor: pointer; color: var(--primary-color);">
+                    ${settings.currencySymbol}${item.price.toFixed(2)} 
+                    <i class="fas fa-pencil-alt" style="font-size: 0.8rem; margin-left: 4px;"></i>
+                </div>
             </div>
             <div class="cart-item-controls">
                 <button class="qty-btn remove" onclick="decreaseQuantity(${item.productId})">
@@ -386,6 +389,31 @@ function decreaseQuantity(productId) {
         }
         vibrate();
         updateCartDisplay();
+    }
+}
+
+/**
+ * Edita el precio de un producto en el carrito
+ */
+function editItemPrice(productId) {
+    const item = cart.find(i => i.productId === productId);
+    if (!item) return;
+
+    // Usar prompt nativo por simplicidad y compatibilidad móvil
+    // En un futuro se podría hacer un modal numérico más bonito
+    const newPriceStr = prompt(`Editar precio de "${item.name}"\nPrecio actual: $${item.price.toFixed(2)}`, item.price);
+
+    if (newPriceStr !== null) {
+        const newPrice = parseFloat(newPriceStr);
+
+        if (!isNaN(newPrice) && newPrice >= 0) {
+            item.price = newPrice;
+            updateCartDisplay();
+            showToast('✅ Precio actualizado');
+            vibrate();
+        } else {
+            showToast('❌ Precio inválido');
+        }
     }
 }
 
