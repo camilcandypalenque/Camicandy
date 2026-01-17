@@ -149,8 +149,21 @@ async function loadProductsTable() {
 
         // Buscar la categoría de manera dinámica
         const category = productCategories.find(c => c.id === product.type);
-        const badgeClass = product.type === 'concentrado' ? 'badge-concentrado' : 'badge-embolsado';
-        const badgeText = category ? category.name : product.type;
+        const badgeClass = product.type === 'concentrado' || (product.type && product.type.includes('concentrado'))
+            ? 'badge-concentrado'
+            : 'badge-embolsado';
+
+        // Obtener nombre legible de la categoría
+        let badgeText;
+        if (category && category.name) {
+            badgeText = category.name;
+        } else {
+            // Convertir ID técnico a nombre legible (ej: "escarchado_para_micheladas" -> "Escarchado Para Micheladas")
+            badgeText = (product.type || 'General')
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
 
         // Calcular badge de caducidad
         let expirationBadge = '';
