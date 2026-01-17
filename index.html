@@ -19,6 +19,18 @@
 
     <!-- JsBarcode para generar códigos de barras -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+    <!-- PWA para Administrador -->
+    <link rel="manifest" href="manifest-admin.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => console.log('✅ SW Admin OK'))
+                    .catch(err => console.log('❌ SW Admin Fail', err));
+            });
+        }
+    </script>
 </head>
 
 <body>
