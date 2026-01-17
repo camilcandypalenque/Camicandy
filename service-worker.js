@@ -12,6 +12,8 @@ const ASSETS_TO_CACHE = [
     'js/config.js',
     'icon-192.png',
     'icon-512.png',
+    'admin-icon-192.png',
+    'admin-icon-512.png',
     'manifest.json',
     'manifest-admin.json',
     'login.html',
