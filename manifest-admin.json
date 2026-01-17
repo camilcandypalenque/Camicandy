@@ -1,5 +1,6 @@
 {
     "name": "Camil Candy Admin",
+    "id": "camil-candy-admin-app",
     "short_name": "CC Admin",
     "start_url": "index.html",
     "display": "standalone",

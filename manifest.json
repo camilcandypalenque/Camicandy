@@ -1,5 +1,6 @@
 {
   "name": "Camil Candy POS",
+  "id": "camil-candy-pos-app",
   "short_name": "CamilCandy",
   "start_url": "vendedor.html",
   "display": "standalone",
