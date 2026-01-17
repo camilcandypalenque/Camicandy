@@ -1175,6 +1175,46 @@ let html5QrCode = null;
 let scannedProductsCount = 0;
 let lastScannedCode = null;
 let scanCooldown = false;
+let audioContext = null;
+
+/**
+ * Reproduce un sonido de beep usando Web Audio API
+ * @param {boolean} success - true para beep de éxito, false para error
+ */
+function playBeep(success = true) {
+    try {
+        // Crear contexto de audio si no existe
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        if (success) {
+            // Beep de éxito: tono alto y corto
+            oscillator.frequency.value = 1200;
+            oscillator.type = 'sine';
+            gainNode.gain.value = 0.3;
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.15);
+        } else {
+            // Beep de error: tono bajo y más largo
+            oscillator.frequency.value = 400;
+            oscillator.type = 'square';
+            gainNode.gain.value = 0.2;
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+    } catch (error) {
+        console.warn('No se pudo reproducir el sonido:', error);
+    }
+}
 
 /**
  * Abre el modal del escáner de código de barras
@@ -1290,6 +1330,9 @@ function onScanSuccess(decodedText, decodedResult) {
         // Mostrar resultado
         showScanResult(product, true);
 
+        // Sonido de éxito (beep)
+        playBeep(true);
+
         // Vibración de éxito
         if (navigator.vibrate) {
             navigator.vibrate([100, 50, 100]);
@@ -1302,6 +1345,9 @@ function onScanSuccess(decodedText, decodedResult) {
     } else {
         // Producto no encontrado
         showScanResult(null, false, decodedText);
+
+        // Sonido de error
+        playBeep(false);
 
         // Vibración de error
         if (navigator.vibrate) {
