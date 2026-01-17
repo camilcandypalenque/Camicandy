@@ -13,6 +13,8 @@ let selectedRouteId = null;
 let selectedClientId = null;
 let vendorClients = [];
 let vendorRoutes = [];
+let productCategories = [];
+let selectedCategory = 'all'; // Filtro de categoría activo
 
 /**
  * Inicializa la aplicación del vendedor
@@ -39,8 +41,10 @@ async function initializeVendorPOS() {
         // Cargar datos
         await loadProducts();
         await loadSettings();
+        await loadVendorCategories();
 
-        // Renderizar productos
+        // Renderizar pestañas de categorías y productos
+        renderCategoryTabs();
         renderProducts();
         updateCartDisplay();
 
@@ -89,33 +93,129 @@ async function loadSettings() {
 }
 
 /**
- * Renderiza los productos en el grid
+ * Carga las categorías desde Firebase
+ */
+async function loadVendorCategories() {
+    try {
+        const db = firebase.firestore();
+        const doc = await db.collection('settings').doc('categories').get();
+
+        if (doc.exists && doc.data().list) {
+            productCategories = doc.data().list;
+        } else {
+            // Categorías por defecto
+            productCategories = [
+                { id: 'concentrado', name: 'Concentrado' },
+                { id: 'embolsado', name: 'Embolsado' }
+            ];
+        }
+        console.log(`📂 ${productCategories.length} categorías cargadas`);
+    } catch (error) {
+        console.error('Error cargando categorías:', error);
+        productCategories = [
+            { id: 'concentrado', name: 'Concentrado' },
+            { id: 'embolsado', name: 'Embolsado' }
+        ];
+    }
+}
+
+/**
+ * Renderiza las pestañas de categorías con contadores
+ */
+function renderCategoryTabs() {
+    const container = document.getElementById('categoryTabsContainer');
+    if (!container) return;
+
+    // Contar productos disponibles (stock > 0) por categoría
+    const availableProducts = products.filter(p => p.stock > 0);
+    const allCount = availableProducts.length;
+
+    let tabsHTML = `
+        <button class="category-tab ${selectedCategory === 'all' ? 'active' : ''}" 
+                onclick="filterByCategory('all')">
+            <i class="fas fa-th"></i>
+            <span>Todos</span>
+            <span class="category-count">${allCount}</span>
+        </button>
+    `;
+
+    productCategories.forEach(cat => {
+        const count = availableProducts.filter(p => p.type === cat.id).length;
+        const isActive = selectedCategory === cat.id;
+
+        // Determinar icono según el tipo
+        let icon = 'fa-box';
+        if (cat.id === 'concentrado') icon = 'fa-wine-bottle';
+        else if (cat.id === 'embolsado') icon = 'fa-shopping-bag';
+
+        tabsHTML += `
+            <button class="category-tab ${isActive ? 'active' : ''}" 
+                    onclick="filterByCategory('${cat.id}')">
+                <i class="fas ${icon}"></i>
+                <span>${cat.name}</span>
+                <span class="category-count">${count}</span>
+            </button>
+        `;
+    });
+
+    container.innerHTML = tabsHTML;
+}
+
+/**
+ * Filtra los productos por categoría
+ */
+function filterByCategory(categoryId) {
+    selectedCategory = categoryId;
+    renderCategoryTabs();
+    renderProducts();
+}
+
+/**
+ * Renderiza los productos en el grid (con soporte para filtro de categoría)
  */
 function renderProducts() {
     const grid = document.getElementById('productsGrid');
     const countBadge = document.getElementById('productCount');
 
-    const availableProducts = products.filter(p => p.stock > 0);
-    countBadge.textContent = `${availableProducts.length} disponibles`;
+    // Filtrar por categoría seleccionada
+    let filteredProducts = products;
+    if (selectedCategory !== 'all') {
+        filteredProducts = products.filter(p => p.type === selectedCategory);
+    }
+
+    const availableFiltered = filteredProducts.filter(p => p.stock > 0);
+    countBadge.textContent = `${availableFiltered.length} disponibles`;
 
     grid.innerHTML = '';
 
-    products.forEach(product => {
+    filteredProducts.forEach(product => {
         const card = document.createElement('div');
         card.className = `product-card ${product.stock <= 0 ? 'out-of-stock' : ''}`;
 
+        // Buscar la categoría del producto para mostrar nombre correcto
+        const category = productCategories.find(c => c.id === product.type);
+        let categoryName;
+        if (category && category.name) {
+            categoryName = category.name;
+        } else {
+            // Convertir ID técnico a nombre legible (ej: "escarchado_para_micheladas" -> "Escarchado Para Micheladas")
+            categoryName = (product.type || 'General')
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
         // Iconos y colores según el tipo de producto
-        const isConcentrado = product.type === 'concentrado';
+        const isConcentrado = product.type === 'concentrado' || (product.type && product.type.includes('concentrado'));
         const productIcon = isConcentrado ? 'fa-wine-bottle' : 'fa-shopping-bag';
         const iconColor = isConcentrado ? '#17a2b8' : '#28a745';
         const badgeClass = isConcentrado ? 'badge-concentrado' : 'badge-embolsado';
-        const typeName = isConcentrado ? 'Concentrado' : 'Embolsado';
 
         card.innerHTML = `
             <div class="product-icon" style="text-align: center; margin-bottom: 8px;">
                 <i class="fas ${productIcon}" style="font-size: 2rem; color: ${iconColor};"></i>
             </div>
-            <span class="product-badge ${badgeClass}">${typeName}</span>
+            <span class="product-badge ${badgeClass}">${categoryName.toUpperCase()}</span>
             <div class="product-name">${product.name}</div>
             <div class="product-price">${settings.currencySymbol}${parseFloat(product.price).toFixed(2)}</div>
             <div class="product-stock">${product.stock > 0 ? `${product.stock} disponibles` : 'Agotado'}</div>
@@ -509,8 +609,11 @@ function showReceipt() {
 
     let itemsHTML = currentSale.details.map(item => `
         <div class="receipt-item">
-            <span>${item.quantity}x ${item.name}</span>
-            <span>${settings.currencySymbol}${item.subtotal.toFixed(2)}</span>
+            <div style="flex: 1;">
+                <span>${item.quantity}x ${item.name}</span>
+                <div style="font-size: 0.8rem; color: #888;">@ ${settings.currencySymbol}${item.price.toFixed(2)} c/u</div>
+            </div>
+            <span style="font-weight: 600;">${settings.currencySymbol}${item.subtotal.toFixed(2)}</span>
         </div>
     `).join('');
 
@@ -686,7 +789,10 @@ function printReceipt() {
             <div class="receipt-items">
                 ${currentSale.details.map(item => `
                     <div class="receipt-item">
-                        <span>${item.quantity}x ${item.name}</span>
+                        <div>
+                            <span>${item.quantity}x ${item.name}</span>
+                            <div style="font-size: 10px; color: #666;">@ ${settings.currencySymbol}${item.price.toFixed(2)} c/u</div>
+                        </div>
                         <span>${settings.currencySymbol}${item.subtotal.toFixed(2)}</span>
                     </div>
                 `).join('')}
@@ -746,7 +852,7 @@ function generateReceiptText() {
 
     currentSale.details.forEach(item => {
         text += `• ${item.quantity}x ${item.name}\n`;
-        text += `   ${settings.currencySymbol}${item.subtotal.toFixed(2)}\n`;
+        text += `   @ ${settings.currencySymbol}${item.price.toFixed(2)} c/u = ${settings.currencySymbol}${item.subtotal.toFixed(2)}\n`;
     });
 
     text += `${'─'.repeat(28)}\n`;
@@ -1056,9 +1162,246 @@ window.openClientModal = openClientModal;
 window.editClient = editClient;
 window.deleteClient = deleteClient;
 window.callClient = callClient;
+window.filterByCategory = filterByCategory;
+window.openBarcodeScanner = openBarcodeScanner;
+window.closeBarcodeScanner = closeBarcodeScanner;
 
 // Iniciar al cargar
 document.addEventListener('DOMContentLoaded', initializeVendorPOS);
+
+// ==================== ESCÁNER DE CÓDIGO DE BARRAS ====================
+
+let html5QrCode = null;
+let scannedProductsCount = 0;
+let lastScannedCode = null;
+let scanCooldown = false;
+
+/**
+ * Abre el modal del escáner de código de barras
+ */
+async function openBarcodeScanner() {
+    const modal = document.getElementById('scannerModal');
+    const scannerContainer = document.getElementById('barcode-scanner');
+    const scanResult = document.getElementById('scanResult');
+    const instructions = document.getElementById('scannerInstructions');
+
+    // Resetear estado
+    scannedProductsCount = 0;
+    lastScannedCode = null;
+    document.getElementById('scannedCount').textContent = '0';
+    scanResult.style.display = 'none';
+    instructions.style.display = 'block';
+
+    modal.classList.add('active');
+
+    try {
+        // Inicializar escáner
+        html5QrCode = new Html5Qrcode('barcode-scanner');
+
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 100 },
+            aspectRatio: 1.5,
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.CODE_93,
+                Html5QrcodeSupportedFormats.QR_CODE
+            ]
+        };
+
+        await html5QrCode.start(
+            { facingMode: 'environment' }, // Cámara trasera
+            config,
+            onScanSuccess,
+            onScanError
+        );
+
+        instructions.innerHTML = `
+            <i class="fas fa-camera" style="font-size: 2rem; margin-bottom: 10px; color: var(--success-color);"></i>
+            <p style="color: var(--success-color);">📷 Cámara activa - Apunta al código de barras</p>
+        `;
+
+    } catch (error) {
+        console.error('Error iniciando escáner:', error);
+        instructions.innerHTML = `
+            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px; color: var(--danger-color);"></i>
+            <p style="color: var(--danger-color);">Error al acceder a la cámara</p>
+            <p style="font-size: 0.85rem; color: #666;">Verifica los permisos de la cámara</p>
+        `;
+    }
+}
+
+/**
+ * Cierra el modal del escáner
+ */
+async function closeBarcodeScanner() {
+    const modal = document.getElementById('scannerModal');
+
+    // Detener el escáner si está activo
+    if (html5QrCode) {
+        try {
+            await html5QrCode.stop();
+            html5QrCode.clear();
+        } catch (error) {
+            console.warn('Error deteniendo escáner:', error);
+        }
+        html5QrCode = null;
+    }
+
+    modal.classList.remove('active');
+
+    // Actualizar la vista del carrito
+    updateCartDisplay();
+    renderProducts();
+}
+
+/**
+ * Callback cuando se escanea exitosamente un código
+ */
+function onScanSuccess(decodedText, decodedResult) {
+    // Evitar escaneos duplicados muy rápidos del mismo código
+    if (scanCooldown || decodedText === lastScannedCode) {
+        return;
+    }
+
+    // Activar cooldown
+    scanCooldown = true;
+    setTimeout(() => {
+        scanCooldown = false;
+        lastScannedCode = null;
+    }, 1500); // 1.5 segundos entre escaneos del mismo producto
+
+    lastScannedCode = decodedText;
+
+    console.log('📦 Código escaneado:', decodedText);
+
+    // Buscar producto por código de barras o ID
+    const product = findProductByBarcode(decodedText);
+
+    if (product) {
+        // Agregar al carrito
+        addToCartFromScanner(product);
+
+        // Mostrar resultado
+        showScanResult(product, true);
+
+        // Vibración de éxito
+        if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
+        }
+
+        // Incrementar contador
+        scannedProductsCount++;
+        document.getElementById('scannedCount').textContent = scannedProductsCount;
+
+    } else {
+        // Producto no encontrado
+        showScanResult(null, false, decodedText);
+
+        // Vibración de error
+        if (navigator.vibrate) {
+            navigator.vibrate(300);
+        }
+    }
+}
+
+/**
+ * Callback para errores de escaneo (se ignoran, son normales)
+ */
+function onScanError(errorMessage) {
+    // Ignorar - son errores normales cuando no hay código visible
+}
+
+/**
+ * Busca un producto por su código de barras o ID
+ */
+function findProductByBarcode(code) {
+    // Buscar por código de barras exacto
+    let product = products.find(p => p.barcode === code);
+
+    // Si no se encuentra, buscar por ID
+    if (!product) {
+        product = products.find(p => String(p.id) === code);
+    }
+
+    // Si aún no se encuentra, buscar coincidencia parcial en barcode
+    if (!product) {
+        product = products.find(p => p.barcode && p.barcode.includes(code));
+    }
+
+    return product;
+}
+
+/**
+ * Agrega un producto al carrito desde el escáner
+ */
+function addToCartFromScanner(product) {
+    if (!product || product.stock <= 0) return;
+
+    const existingItem = cart.find(item => item.productId === product.id);
+
+    if (existingItem) {
+        if (existingItem.quantity < product.stock) {
+            existingItem.quantity++;
+        } else {
+            showToast('Sin stock disponible');
+            return;
+        }
+    } else {
+        cart.push({
+            productId: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: 1
+        });
+    }
+
+    // Actualizar display sin cerrar el escáner
+    updateCartDisplay();
+}
+
+/**
+ * Muestra el resultado del escaneo
+ */
+function showScanResult(product, success, code = '') {
+    const scanResult = document.getElementById('scanResult');
+    const productName = document.getElementById('scannedProductName');
+    const productInfo = document.getElementById('scannedProductInfo');
+
+    if (success && product) {
+        scanResult.style.background = '#d4edda';
+        productName.style.color = '#155724';
+        productInfo.style.color = '#155724';
+
+        productName.innerHTML = `<i class="fas fa-check-circle"></i> ${product.name}`;
+
+        const cartItem = cart.find(item => item.productId === product.id);
+        const qty = cartItem ? cartItem.quantity : 1;
+        productInfo.textContent = `${settings.currencySymbol}${product.price.toFixed(2)} × ${qty} = ${settings.currencySymbol}${(product.price * qty).toFixed(2)}`;
+
+    } else {
+        scanResult.style.background = '#f8d7da';
+        productName.style.color = '#721c24';
+        productInfo.style.color = '#721c24';
+
+        productName.innerHTML = `<i class="fas fa-times-circle"></i> Producto no encontrado`;
+        productInfo.textContent = `Código: ${code}`;
+    }
+
+    scanResult.style.display = 'block';
+
+    // Ocultar después de 2 segundos si es éxito
+    if (success) {
+        setTimeout(() => {
+            scanResult.style.display = 'none';
+        }, 2000);
+    }
+}
 
 // ==================== RUTAS Y CLIENTES ====================
 
