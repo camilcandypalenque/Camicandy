@@ -968,7 +968,7 @@ function setupVendorTabs() {
             tab.style.fontWeight = '600';
 
             // Mostrar/ocultar vistas
-            document.getElementById('posView').style.display = view === 'pos' ? 'grid' : 'none';
+            document.getElementById('posView').style.display = view === 'pos' ? 'flex' : 'none';
             document.getElementById('pendingView').style.display = view === 'pending' ? 'block' : 'none';
             const clientsView = document.getElementById('clientsView');
             if (clientsView) {
