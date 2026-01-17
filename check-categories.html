@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Verificar Categorías - Firebase</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="js/config.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #6a11cb;
+        }
+
+        pre {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .loading {
+            color: #666;
+        }
+
+        .category {
+            background: #e8f5e9;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+
+        .category-id {
+            font-family: monospace;
+            color: #888;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 Categorías en Firebase</h1>
+        <div id="result" class="loading">Cargando categorías...</div>
+    </div>
+
+    <script>
+        async function checkCategories() {
+            const resultDiv = document.getElementById('result');
+
+            try {
+                // Inicializar Firebase
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(window.FIREBASE_CONFIG);
+                }
+
+                const db = firebase.firestore();
+
+                // Obtener categorías
+                const doc = await db.collection('settings').doc('categories').get();
+
+                if (doc.exists && doc.data().list) {
+                    const categories = doc.data().list;
+
+                    let html = `<p><strong>Total:</strong> ${categories.length} categorías</p>`;
+                    html += '<hr>';
+
+                    categories.forEach((cat, index) => {
+                        html += `
+                            <div class="category">
+                                <strong>${index + 1}. ${cat.name}</strong>
+                                <div class="category-id">ID: ${cat.id}</div>
+                                ${cat.isDefault ? '<span style="color: #888;">(Por defecto)</span>' : ''}
+                            </div>
+                        `;
+                    });
+
+                    html += '<hr><h3>Datos crudos (JSON):</h3>';
+                    html += `<pre>${JSON.stringify(categories, null, 2)}</pre>`;
+
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = '<p style="color: orange;">No se encontraron categorías en Firebase. Se usarán las categorías por defecto.</p>';
+                }
+
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error(error);
+            }
+        }
+
+        checkCategories();
+    </script>
+</body>
+
+</html>
+</CodeContent>
+<parameter name="EmptyFile">false

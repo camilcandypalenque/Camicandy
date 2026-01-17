@@ -11,6 +11,10 @@ let settings = {};
  * Inicializa el módulo de inventario
  */
 async function initializeInventory() {
+    // Cargar categorías primero para que el select esté actualizado
+    await loadCategories();
+    updateCategorySelect();
+
     await loadProductsData();
     setupInventoryEventListeners();
     console.log('✅ Módulo de inventario inicializado');
@@ -124,6 +128,8 @@ function findProductById(productId) {
  * Carga y muestra la tabla de productos
  */
 async function loadProductsTable() {
+    // Asegurar que las categorías estén cargadas primero
+    await loadCategories();
     await loadProductsData();
 
     const productsTableBody = document.getElementById('productsTableBody');
