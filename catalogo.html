@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Cami Candy - Deliciosos dulces, botanas y concentrados para micheladas. Catálogo de productos.">
+    <meta name="theme-color" content="#6a11cb">
+
+    <title>Cami Candy - Catálogo de Productos</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="icon-192.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Estilos -->
+    <link rel="stylesheet" href="css/catalogo.css">
+</head>
+
+<body>
+
+    <!-- ==================== HERO SECTION ==================== -->
+    <section class="hero">
+        <div class="logo-container">
+            <img src="icon-512.png" alt="Cami Candy Logo" class="logo">
+        </div>
+        <h1>Cami <span>Candy</span></h1>
+        <p>🍬 Dulces, botanas y concentrados para micheladas 🍺</p>
+    </section>
+
+    <!-- ==================== NOSOTROS SECTION ==================== -->
+    <section class="about-section">
+        <div class="about-container">
+            <div class="about-header">
+                <h2><i class="fas fa-heart"></i> Nosotros</h2>
+                <p>Una empresa familiar con valores</p>
+            </div>
+
+            <div class="values-grid">
+                <div class="value-card mission">
+                    <div class="value-icon">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <h3>Misión</h3>
+                    <p>Endulzar cada momento de nuestros clientes con productos de calidad, llevando alegría y sabor a
+                        cada hogar con el compromiso y dedicación de una familia que ama lo que hace.</p>
+                </div>
+
+                <div class="value-card vision">
+                    <div class="value-icon">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <h3>Visión</h3>
+                    <p>Ser la dulcería familiar preferida de Chiapas, reconocida por nuestra calidad, responsabilidad y
+                        el trato cercano que nos caracteriza con cada cliente.</p>
+                </div>
+
+                <div class="value-card values">
+                    <div class="value-icon">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                    <h3>Valores</h3>
+                    <p>Familia • Honestidad • Calidad • Responsabilidad • Servicio con corazón</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== CATALOG SECTION ==================== -->
+    <section class="catalog-section">
+        <div class="section-header">
+            <h2><i class="fas fa-candy-cane"></i> Nuestros Productos</h2>
+            <p>Descubre nuestra variedad de productos</p>
+        </div>
+
+        <div class="products-grid" id="productsGrid">
+            <!-- Loader mientras carga -->
+            <div class="loader" id="loader">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Cargando productos...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== CTA SECTION ==================== -->
+    <section class="cta-section">
+        <h2>¿Te interesa algún producto?</h2>
+        <p>¡Contáctanos por WhatsApp y te atendemos!</p>
+        <button class="whatsapp-btn" id="whatsappBtn">
+            <i class="fab fa-whatsapp"></i>
+            Escríbenos
+        </button>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="footer">
+        <p>© 2026 Cami Candy | Hecho con <i class="fas fa-heart"></i> en Chiapas, México</p>
+    </footer>
+
+    <!-- ==================== FLOATING WHATSAPP ==================== -->
+    <div class="whatsapp-float" id="whatsappFloat" title="Contáctanos por WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </div>
+
+    <!-- ==================== SCRIPTS ==================== -->
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- Configuración Firebase -->
+    <script src="js/config.js"></script>
+    <script>
+        // Inicializar Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(FIREBASE_CONFIG);
+        }
+    </script>
+
+    <!-- Lógica del catálogo -->
+    <script src="js/catalogo.js"></script>
+
+</body>
+
+</html>

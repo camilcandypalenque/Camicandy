@@ -15,6 +15,7 @@ let vendorClients = [];
 let vendorRoutes = [];
 let productCategories = [];
 let selectedCategory = 'all'; // Filtro de categoría activo
+let currentExitOrder = null; // Orden de salida activa para la ruta seleccionada
 
 /**
  * Inicializa la aplicación del vendedor
@@ -70,10 +71,59 @@ async function initializeVendorPOS() {
 }
 
 /**
- * Carga los productos desde Firebase
+ * Carga los productos desde Firebase o desde la orden de salida asignada
  */
 async function loadProducts() {
     const db = firebase.firestore();
+
+    // Si hay una ruta seleccionada, intentar cargar desde orden de salida
+    if (selectedRouteId) {
+        try {
+            // Buscar orden de salida activa para esta ruta
+            const exitOrdersSnapshot = await db.collection('exit_orders')
+                .where('routeId', '==', selectedRouteId)
+                .where('status', '==', 'active')
+                .limit(1)
+                .get();
+
+            if (!exitOrdersSnapshot.empty) {
+                const orderDoc = exitOrdersSnapshot.docs[0];
+                currentExitOrder = {
+                    ...orderDoc.data(),
+                    docId: orderDoc.id
+                };
+
+                console.log(`📦 Orden de salida encontrada: ${currentExitOrder.id}`);
+
+                // Convertir items de la orden a formato de productos
+                products = currentExitOrder.items
+                    .filter(item => item.remaining > 0 || (item.quantity - (item.sold || 0)) > 0)
+                    .map(item => ({
+                        id: item.productId,
+                        name: item.productName,
+                        price: item.price,
+                        cost: item.cost || 0,
+                        stock: item.remaining || (item.quantity - (item.sold || 0)),
+                        type: item.type || 'general',
+                        fromExitOrder: true,
+                        exitOrderId: currentExitOrder.id
+                    }));
+
+                console.log(`✅ ${products.length} productos cargados desde orden de salida`);
+                return;
+            } else {
+                currentExitOrder = null;
+                console.log('⚠️ No hay orden de salida activa para esta ruta');
+            }
+        } catch (error) {
+            console.error('Error buscando orden de salida:', error);
+            currentExitOrder = null;
+        }
+    } else {
+        currentExitOrder = null;
+    }
+
+    // Fallback: cargar todos los productos del inventario
     const snapshot = await db.collection('products').orderBy('name').get();
     products = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
 }
@@ -605,6 +655,53 @@ async function processSale() {
                 product.stock -= item.quantity;
             }
         });
+
+        // Si la venta fue desde una orden de salida, actualizar la orden
+        if (currentExitOrder) {
+            try {
+                const orderRef = db.collection('exit_orders').doc(currentExitOrder.id);
+                const orderDoc = await orderRef.get();
+
+                if (orderDoc.exists) {
+                    const orderData = orderDoc.data();
+                    let updatedItems = [...orderData.items];
+                    let soldItemsCount = orderData.soldItems || 0;
+                    let soldValue = orderData.soldValue || 0;
+
+                    // Actualizar items vendidos
+                    for (const cartItem of cart) {
+                        const itemIndex = updatedItems.findIndex(i =>
+                            i.productId.toString() === cartItem.productId.toString()
+                        );
+
+                        if (itemIndex !== -1) {
+                            updatedItems[itemIndex].sold = (updatedItems[itemIndex].sold || 0) + cartItem.quantity;
+                            updatedItems[itemIndex].remaining = updatedItems[itemIndex].quantity - updatedItems[itemIndex].sold;
+
+                            soldItemsCount += cartItem.quantity;
+                            soldValue += cartItem.quantity * cartItem.price;
+                        }
+                    }
+
+                    await orderRef.update({
+                        items: updatedItems,
+                        soldItems: soldItemsCount,
+                        soldValue: soldValue,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    // Actualizar orden local
+                    currentExitOrder.items = updatedItems;
+                    currentExitOrder.soldItems = soldItemsCount;
+                    currentExitOrder.soldValue = soldValue;
+
+                    console.log('✅ Orden de salida actualizada con ventas');
+                }
+            } catch (error) {
+                console.error('Error actualizando orden de salida:', error);
+                // No interrumpir la venta si falla la actualización de la orden
+            }
+        }
 
         // Limpiar carrito
         cart = [];

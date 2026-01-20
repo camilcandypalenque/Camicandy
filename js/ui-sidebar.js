@@ -111,6 +111,7 @@ function updatePageTitle(section) {
         'clients': { icon: 'fa-users', text: 'Cartelera de Clientes' },
         'routes': { icon: 'fa-route', text: 'Gestión de Rutas' },
         'expenses': { icon: 'fa-money-bill-wave', text: 'Control de Gastos' },
+        'exit-orders': { icon: 'fa-truck-loading', text: 'Órdenes de Salida' },
         'reports': { icon: 'fa-chart-bar', text: 'Reportes y Estadísticas' },
         'dashboard': { icon: 'fa-tachometer-alt', text: 'Dashboard' },
         'settings': { icon: 'fa-cog', text: 'Configuración' }
@@ -168,6 +169,11 @@ async function loadSectionData(section) {
             case 'expenses':
                 if (typeof loadAdminExpenses === 'function') {
                     await loadAdminExpenses();
+                }
+                break;
+            case 'exit-orders':
+                if (typeof initializeExitOrders === 'function') {
+                    await initializeExitOrders();
                 }
                 break;
         }

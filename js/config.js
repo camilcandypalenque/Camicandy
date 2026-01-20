@@ -19,7 +19,8 @@ const COLLECTIONS = {
     SALES: 'sales',
     STOCK_MOVEMENTS: 'stock_movements',
     SETTINGS: 'settings',
-    COUNTERS: 'counters'
+    COUNTERS: 'counters',
+    EXIT_ORDERS: 'exit_orders'
 };
 
 // Configuración por defecto del sistema

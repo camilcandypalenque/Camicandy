@@ -1,0 +1,818 @@
+/**
+ * Estilos Landing Page - Catálogo Cami Candy
+ * Diseño moderno con colores de marca
+ */
+
+:root {
+    --primary: #ff6b8b;
+    --secondary: #6a11cb;
+    --accent: #ffa726;
+    --gradient-start: #6a11cb;
+    --gradient-end: #2575fc;
+    --white: #ffffff;
+    --light: #f8f9fa;
+    --dark: #343a40;
+    --whatsapp: #25d366;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    background: linear-gradient(-45deg, #6a11cb, #2575fc, #f093fb, #00f2fe, #ff6b9d, #c471ed);
+    background-size: 600% 600%;
+    animation: pageBackground 25s ease infinite;
+    color: var(--dark);
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+@keyframes pageBackground {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    25% {
+        background-position: 50% 100%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    75% {
+        background-position: 50% 0%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* ==================== HERO SECTION ==================== */
+.hero {
+    min-height: 50vh;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Confeti animado */
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        radial-gradient(circle at 10% 20%, #ffeb3b 3px, transparent 3px),
+        radial-gradient(circle at 30% 70%, #4caf50 3px, transparent 3px),
+        radial-gradient(circle at 50% 10%, #00bcd4 3px, transparent 3px),
+        radial-gradient(circle at 70% 80%, #ff9800 3px, transparent 3px),
+        radial-gradient(circle at 90% 30%, #e91e63 3px, transparent 3px),
+        radial-gradient(circle at 20% 50%, #ffeb3b 2px, transparent 2px),
+        radial-gradient(circle at 80% 60%, #00bcd4 2px, transparent 2px),
+        radial-gradient(circle at 40% 90%, #ff5722 2px, transparent 2px);
+    background-size: 150px 150px;
+    animation: confettiFloat 20s linear infinite;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+@keyframes confettiFloat {
+    0% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    100% {
+        transform: translateY(-100px) rotate(360deg);
+    }
+}
+
+.logo-container {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 20px;
+}
+
+.logo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--white);
+    padding: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.hero h1 {
+    font-size: 3rem;
+    color: var(--white);
+    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 1;
+    margin-bottom: 10px;
+}
+
+.hero h1 span {
+    color: var(--accent);
+}
+
+.hero p {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.9);
+    position: relative;
+    z-index: 1;
+}
+
+/* ==================== ABOUT SECTION ==================== */
+.about-section {
+    padding: 60px 20px;
+    background: linear-gradient(180deg, var(--light) 0%, #fff 100%);
+}
+
+.about-container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.about-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.about-header h2 {
+    font-size: 2rem;
+    color: var(--secondary);
+    margin-bottom: 10px;
+}
+
+.about-header h2 i {
+    color: var(--primary);
+}
+
+.about-header p {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.values-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.value-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.value-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--primary);
+    box-shadow: 0 15px 40px rgba(106, 17, 203, 0.15);
+}
+
+.value-card.mission .value-icon {
+    background: linear-gradient(135deg, var(--primary), #ff8fab);
+}
+
+.value-card.vision .value-icon {
+    background: linear-gradient(135deg, var(--secondary), var(--gradient-end));
+}
+
+.value-card.values .value-icon {
+    background: linear-gradient(135deg, var(--accent), #ffcc80);
+}
+
+.value-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.value-icon i {
+    font-size: 1.8rem;
+    color: white;
+}
+
+.value-card h3 {
+    font-size: 1.3rem;
+    color: var(--dark);
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.value-card p {
+    color: #666;
+    line-height: 1.7;
+    font-size: 0.95rem;
+}
+
+/* ==================== CATALOG SECTION ==================== */
+.catalog-section {
+    padding: 60px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.section-header h2 {
+    font-size: 2rem;
+    color: var(--secondary);
+    margin-bottom: 10px;
+}
+
+.section-header p {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+/* Products Grid */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 25px;
+}
+
+/* Product Card */
+.product-card {
+    background: var(--white);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.6s ease forwards;
+    opacity: 0;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.product-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(106, 17, 203, 0.2);
+}
+
+.product-image {
+    height: 180px;
+    background: linear-gradient(135deg, #f5f7fa, #e4e8eb);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-image img {
+    transform: scale(1.1);
+}
+
+.product-placeholder {
+    font-size: 4rem;
+    color: var(--primary);
+    opacity: 0.5;
+}
+
+.product-info {
+    padding: 20px;
+    text-align: center;
+}
+
+.product-info h3 {
+    font-size: 1.1rem;
+    color: var(--dark);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.product-type {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: var(--white);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Loader */
+.loader {
+    text-align: center;
+    padding: 60px;
+    grid-column: 1 / -1;
+}
+
+.loader i {
+    font-size: 3rem;
+    color: var(--primary);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* No products / Error */
+.no-products,
+.error-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px;
+    color: #999;
+}
+
+.no-products i,
+.error-message i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    color: var(--primary);
+    opacity: 0.5;
+}
+
+.retry-btn {
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+    background: var(--secondary);
+    transform: scale(1.05);
+}
+
+/* ==================== CTA SECTION ==================== */
+.cta-section {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    padding: 80px 20px;
+    text-align: center;
+}
+
+.cta-section h2 {
+    font-size: 2.5rem;
+    color: var(--white);
+    margin-bottom: 15px;
+}
+
+.cta-section p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+}
+
+.whatsapp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--whatsapp);
+    color: white;
+    padding: 18px 40px;
+    border-radius: 50px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 8px 30px rgba(37, 211, 102, 0.4);
+    transition: all 0.3s ease;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 8px 30px rgba(37, 211, 102, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 8px 50px rgba(37, 211, 102, 0.6);
+    }
+}
+
+.whatsapp-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 40px rgba(37, 211, 102, 0.5);
+}
+
+.whatsapp-btn i {
+    font-size: 1.5rem;
+}
+
+/* ==================== FLOATING WHATSAPP ==================== */
+.whatsapp-float {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 65px;
+    height: 65px;
+    background: var(--whatsapp);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 5px 25px rgba(37, 211, 102, 0.5);
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.whatsapp-float:hover {
+    transform: scale(1.1);
+}
+
+.whatsapp-float i {
+    font-size: 2rem;
+    color: white;
+}
+
+/* ==================== FOOTER ==================== */
+.footer {
+    background: var(--dark);
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.footer p {
+    font-size: 0.9rem;
+}
+
+.footer i {
+    color: var(--primary);
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero p {
+        font-size: 1rem;
+    }
+
+    .logo {
+        width: 100px;
+        height: 100px;
+    }
+
+    .values-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .value-card {
+        padding: 25px;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 15px;
+    }
+
+    .product-image {
+        height: 140px;
+    }
+
+    .product-info h3 {
+        font-size: 0.95rem;
+    }
+
+    .cta-section h2 {
+        font-size: 1.8rem;
+    }
+
+    .whatsapp-btn {
+        padding: 15px 30px;
+        font-size: 1rem;
+    }
+
+    .whatsapp-float {
+        width: 55px;
+        height: 55px;
+        bottom: 20px;
+        right: 20px;
+    }
+
+    .whatsapp-float i {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero {
+        min-height: 40vh;
+        padding: 40px 15px;
+    }
+
+    .about-section {
+        padding: 40px 15px;
+    }
+
+    .catalog-section {
+        padding: 40px 15px;
+    }
+
+    .products-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .product-info {
+        padding: 12px;
+    }
+
+    .product-info h3 {
+        font-size: 0.85rem;
+    }
+
+    .product-type {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+    }
+}
+
+/* ==================== PRODUCT SHOWCASE SECTIONS ==================== */
+.products-showcase {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.product-showcase {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    position: relative;
+    opacity: 0;
+    transform: translateY(50px);
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.product-showcase.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Fondos transparentes para ver el fondo animado general */
+.product-showcase:nth-child(odd) {
+    background: transparent;
+}
+
+.product-showcase:nth-child(even) {
+    background: transparent;
+}
+
+.showcase-content {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    max-width: 1100px;
+    width: 100%;
+}
+
+.layout-right .showcase-content {
+    flex-direction: row-reverse;
+}
+
+.showcase-image {
+    flex: 1;
+    max-width: 450px;
+}
+
+.showcase-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 25px;
+    box-shadow: 0 20px 60px rgba(106, 17, 203, 0.2);
+    transition: transform 0.5s ease;
+}
+
+.product-showcase:hover .showcase-image img {
+    transform: scale(1.05) rotate(2deg);
+}
+
+.showcase-placeholder {
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 6rem;
+    color: white;
+}
+
+.showcase-info {
+    flex: 1;
+    padding: 20px 0;
+}
+
+.showcase-number {
+    display: inline-block;
+    font-size: 4rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.3);
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+.showcase-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.showcase-description {
+    font-size: 1.15rem;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.8;
+    margin-bottom: 30px;
+}
+
+.showcase-cta {
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: white;
+    border: none;
+    padding: 15px 35px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(37, 211, 102, 0.3);
+}
+
+.showcase-cta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(37, 211, 102, 0.4);
+}
+
+.showcase-cta i {
+    font-size: 1.3rem;
+}
+
+/* Scroll Indicator */
+.scroll-indicator {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: bounce 2s infinite;
+}
+
+.scroll-indicator i {
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+@keyframes bounce {
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    40% {
+        transform: translateX(-50%) translateY(-15px);
+    }
+
+    60% {
+        transform: translateX(-50%) translateY(-8px);
+    }
+}
+
+/* Responsive Showcase */
+@media (max-width: 900px) {
+    .product-showcase {
+        min-height: auto;
+        padding: 50px 20px;
+    }
+
+    .showcase-content {
+        flex-direction: column !important;
+        gap: 30px;
+        text-align: center;
+    }
+
+    .showcase-image {
+        max-width: 300px;
+    }
+
+    .showcase-number {
+        font-size: 3rem;
+    }
+
+    .showcase-title {
+        font-size: 1.8rem;
+    }
+
+    .showcase-description {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .product-showcase {
+        padding: 40px 15px;
+    }
+
+    .showcase-image {
+        max-width: 250px;
+    }
+
+    .showcase-title {
+        font-size: 1.5rem;
+    }
+
+    .showcase-cta {
+        padding: 12px 25px;
+        font-size: 1rem;
+    }
+}

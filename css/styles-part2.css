@@ -325,3 +325,369 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ==================== EXIT ORDERS ==================== */
+
+/* Modal Overlay */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.badge-success {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white;
+}
+
+.badge-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.badge-secondary {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    color: white;
+}
+
+/* Progress bars */
+.progress-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-direction: column;
+}
+
+.progress-bar-mini {
+    width: 100%;
+    height: 6px;
+    background: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar-large {
+    width: 100%;
+    height: 12px;
+    background: #eee;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+/* Product item in modal */
+.product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.product-item:hover {
+    border-color: #667eea;
+    background: #f8f9ff;
+}
+
+.product-item.selected {
+    border-color: #27ae60;
+    background: #f0fff4;
+}
+
+.product-info {
+    flex: 1;
+}
+
+.product-info strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.product-meta {
+    display: flex;
+    gap: 10px;
+}
+
+.stock-badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 10px;
+}
+
+.price-badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    background: #e8f5e9;
+    color: #388e3c;
+    border-radius: 10px;
+}
+
+/* Quantity controls */
+.product-quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-qty {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: #f0f0f0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-qty:hover:not(:disabled) {
+    background: #667eea;
+    color: white;
+}
+
+.btn-qty:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.qty-input {
+    width: 50px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 6px;
+    font-weight: 600;
+}
+
+/* Summary section */
+.summary-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 12px;
+    border-radius: 8px 8px 0 0;
+    margin: -10px -10px 10px -10px;
+}
+
+.summary-header h4 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.summary-items {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+}
+
+.summary-item .item-name {
+    flex: 1;
+}
+
+.summary-item .item-qty {
+    color: #666;
+    margin-right: 10px;
+}
+
+.summary-item .item-subtotal {
+    font-weight: 600;
+    color: #27ae60;
+}
+
+.summary-totals {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px solid #eee;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.total-row.total-value {
+    font-size: 1.2rem;
+    color: #667eea;
+}
+
+/* Empty states */
+.empty-message,
+.empty-summary {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.empty-message i,
+.empty-summary i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+/* Order detail modal */
+.order-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.order-detail-header h3 {
+    margin: 0;
+    color: var(--secondary-color);
+}
+
+.order-detail-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.info-row .label {
+    color: #666;
+    min-width: 100px;
+}
+
+.info-row .value {
+    font-weight: 600;
+}
+
+.order-progress-section,
+.order-items-section {
+    margin-bottom: 20px;
+}
+
+.order-items-section h4,
+.order-progress-section h4 {
+    margin-bottom: 15px;
+    color: var(--secondary-color);
+}
+
+/* Mini table for order details */
+.mini-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.mini-table th,
+.mini-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.mini-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* Button icons */
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    background: #f0f0f0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    margin: 0 2px;
+}
+
+.btn-icon:hover {
+    background: #667eea;
+    color: white;
+}
+
+.btn-icon.btn-success:hover {
+    background: #27ae60;
+}
+
+.btn-icon.btn-danger:hover {
+    background: #e74c3c;
+}
+
+.actions-cell {
+    white-space: nowrap;
+}
+
+/* Secondary button */
+.btn-secondary {
+    background: #95a5a6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: #7f8c8d;
+}
