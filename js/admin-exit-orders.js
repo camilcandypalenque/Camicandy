@@ -149,7 +149,9 @@ async function openNewExitOrderModal() {
     // Mostrar modal
     const modal = document.getElementById('new-exit-order-modal');
     if (modal) {
-        modal.classList.add('active');
+        modal.style.display = 'flex'; // Forzar visualización
+        // Pequeño delay para permitir transición si la hubiera
+        setTimeout(() => modal.classList.add('active'), 10);
     }
 }
 
@@ -160,6 +162,9 @@ function closeNewExitOrderModal() {
     const modal = document.getElementById('new-exit-order-modal');
     if (modal) {
         modal.classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none'; // Forzar ocultamiento
+        }, 300); // Esperar transición
     }
 }
 
@@ -476,7 +481,8 @@ async function viewExitOrderDetail(orderId) {
 
     const modal = document.getElementById('exit-order-detail-modal');
     if (modal) {
-        modal.classList.add('active');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
     }
 }
 
@@ -487,6 +493,9 @@ function closeExitOrderDetailModal() {
     const modal = document.getElementById('exit-order-detail-modal');
     if (modal) {
         modal.classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
     }
 }
 

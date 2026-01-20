@@ -329,6 +329,7 @@
 /* ==================== EXIT ORDERS ==================== */
 
 /* Modal Overlay */
+/* Modal Overlay */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -342,7 +343,15 @@
     justify-content: center;
 }
 
-.modal-overlay.active {
+/* Ocultar modales específicos por defecto */
+#new-exit-order-modal,
+#exit-order-detail-modal {
+    display: none;
+}
+
+.modal-overlay.active,
+#new-exit-order-modal.active,
+#exit-order-detail-modal.active {
     display: flex;
 }
 
