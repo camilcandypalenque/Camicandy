@@ -233,14 +233,16 @@ function renderProducts() {
         filteredProducts = products.filter(p => p.type === selectedCategory);
     }
 
+    // Filtrar productos agotados (no mostrar en la lista)
     const availableFiltered = filteredProducts.filter(p => p.stock > 0);
     countBadge.textContent = `${availableFiltered.length} disponibles`;
 
     grid.innerHTML = '';
 
-    filteredProducts.forEach(product => {
+    // Solo renderizar productos disponibles (stock > 0)
+    availableFiltered.forEach(product => {
         const card = document.createElement('div');
-        card.className = `product-card ${product.stock <= 0 ? 'out-of-stock' : ''}`;
+        card.className = 'product-card';
 
         // Buscar la categoría del producto para mostrar nombre correcto
         const category = productCategories.find(c => c.id === product.type);
@@ -1095,9 +1097,15 @@ function setupVendorTabs() {
             // Mostrar/ocultar vistas
             document.getElementById('posView').style.display = view === 'pos' ? 'flex' : 'none';
             document.getElementById('pendingView').style.display = view === 'pending' ? 'block' : 'none';
+
             const clientsView = document.getElementById('clientsView');
             if (clientsView) {
                 clientsView.style.display = view === 'clients' ? 'block' : 'none';
+            }
+
+            const mySalesView = document.getElementById('mySalesView');
+            if (mySalesView) {
+                mySalesView.style.display = view === 'mySales' ? 'block' : 'none';
             }
 
             // Cargar datos según la vista
@@ -1105,6 +1113,8 @@ function setupVendorTabs() {
                 loadVendorPendingSales();
             } else if (view === 'clients') {
                 loadVendorClients();
+            } else if (view === 'mySales') {
+                loadMySales();
             }
         });
     });
@@ -2100,3 +2110,500 @@ function callClient(phone) {
     if (!phone) return;
     window.location.href = `tel:${phone}`;
 }
+
+// ==================== CORRECCIÓN DE VENTAS ====================
+
+let correctionItems = []; // Items de la venta siendo corregida
+let originalSaleData = null; // Datos originales de la venta
+
+/**
+ * Abre el modal de corrección de venta
+ */
+function openCorrectionModal() {
+    if (!currentSale) {
+        showToast('No hay venta para corregir');
+        return;
+    }
+
+    // Guardar datos originales
+    originalSaleData = JSON.parse(JSON.stringify(currentSale));
+
+    // Copiar items para edición
+    correctionItems = currentSale.details.map(item => ({
+        ...item,
+        originalQuantity: item.quantity // Guardar cantidad original
+    }));
+
+    // Llenar el modal
+    document.getElementById('correctionSaleId').textContent = currentSale.id;
+    document.getElementById('correctionCustomerName').value = currentSale.customerName || '';
+
+    // Renderizar productos
+    renderCorrectionProducts();
+    updateCorrectionTotals();
+
+    // Mostrar modal
+    document.getElementById('correctionModal').classList.add('active');
+}
+
+/**
+ * Cierra el modal de corrección
+ */
+function closeCorrectionModal() {
+    document.getElementById('correctionModal').classList.remove('active');
+    correctionItems = [];
+    originalSaleData = null;
+}
+
+/**
+ * Renderiza la lista de productos en el modal de corrección
+ */
+function renderCorrectionProducts() {
+    const container = document.getElementById('correctionProductsList');
+
+    if (correctionItems.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: #666;">
+                <i class="fas fa-box-open" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                <p>No hay productos</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = correctionItems.map((item, index) => `
+        <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: white; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px;">
+            <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 0.95rem;">${item.name}</div>
+                <div style="color: #666; font-size: 0.85rem;">$${item.price.toFixed(2)} c/u</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button onclick="decreaseCorrectionQty(${index})" 
+                    style="width: 32px; height: 32px; border: none; background: #f8f9fa; border-radius: 50%; cursor: pointer; font-size: 1rem;">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <span style="min-width: 30px; text-align: center; font-weight: 600;">${item.quantity}</span>
+                <button onclick="increaseCorrectionQty(${index})" 
+                    style="width: 32px; height: 32px; border: none; background: #f8f9fa; border-radius: 50%; cursor: pointer; font-size: 1rem;">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <button onclick="removeCorrectionItem(${index})" 
+                style="width: 32px; height: 32px; border: none; background: #dc3545; color: white; border-radius: 50%; cursor: pointer;">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+/**
+ * Aumenta la cantidad de un producto en corrección
+ */
+function increaseCorrectionQty(index) {
+    if (correctionItems[index]) {
+        correctionItems[index].quantity++;
+        correctionItems[index].subtotal = correctionItems[index].price * correctionItems[index].quantity;
+        renderCorrectionProducts();
+        updateCorrectionTotals();
+    }
+}
+
+/**
+ * Disminuye la cantidad de un producto en corrección
+ */
+function decreaseCorrectionQty(index) {
+    if (correctionItems[index] && correctionItems[index].quantity > 1) {
+        correctionItems[index].quantity--;
+        correctionItems[index].subtotal = correctionItems[index].price * correctionItems[index].quantity;
+        renderCorrectionProducts();
+        updateCorrectionTotals();
+    }
+}
+
+/**
+ * Elimina un producto de la corrección
+ */
+function removeCorrectionItem(index) {
+    if (correctionItems[index]) {
+        correctionItems.splice(index, 1);
+        renderCorrectionProducts();
+        updateCorrectionTotals();
+    }
+}
+
+/**
+ * Actualiza los totales en el modal de corrección
+ */
+function updateCorrectionTotals() {
+    const subtotal = correctionItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const taxRate = settings.taxRate || 0;
+    const taxAmount = subtotal * (taxRate / 100);
+    const total = subtotal + taxAmount;
+
+    document.getElementById('correctionSubtotal').textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById('correctionTax').textContent = `$${taxAmount.toFixed(2)}`;
+    document.getElementById('correctionTotal').textContent = `$${total.toFixed(2)}`;
+}
+
+/**
+ * Guarda la corrección de la venta
+ */
+async function saveSaleCorrection() {
+    if (!originalSaleData) {
+        showToast('Error: No hay datos de venta');
+        return;
+    }
+
+    const newCustomerName = document.getElementById('correctionCustomerName').value.trim();
+    if (!newCustomerName) {
+        showToast('Ingresa el nombre del cliente');
+        return;
+    }
+
+    if (correctionItems.length === 0) {
+        if (confirm('¿Deseas cancelar esta venta completamente? Se restaurará todo el stock.')) {
+            await cancelSaleCompletely();
+        }
+        return;
+    }
+
+    showLoading('Guardando corrección...');
+
+    try {
+        const db = firebase.firestore();
+        const batch = db.batch();
+
+        // Calcular nuevos totales
+        const newSubtotal = correctionItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const taxRate = settings.taxRate || 0;
+        const newTaxAmount = newSubtotal * (taxRate / 100);
+        const newTotal = newSubtotal + newTaxAmount;
+
+        // Preparar detalles corregidos
+        const newDetails = correctionItems.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            subtotal: item.price * item.quantity
+        }));
+
+        // Actualizar documento de venta
+        const saleRef = db.collection('sales').doc(originalSaleData.id.toString());
+        batch.update(saleRef, {
+            customerName: newCustomerName,
+            details: newDetails,
+            subtotal: newSubtotal,
+            taxAmount: newTaxAmount,
+            total: newTotal,
+            correctedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            originalDetails: originalSaleData.details // Guardar historial
+        });
+
+        // Actualizar stock de productos
+        // 1. Restaurar stock de productos originales
+        for (const originalItem of originalSaleData.details) {
+            const productRef = db.collection('products').doc(originalItem.productId.toString());
+            const product = products.find(p => p.id.toString() === originalItem.productId.toString() || p.docId === originalItem.productId.toString());
+            if (product) {
+                const newStock = (product.stock || 0) + originalItem.quantity;
+                batch.update(productRef, { stock: newStock });
+                // Actualizar localmente
+                product.stock = newStock;
+            }
+        }
+
+        // 2. Reducir stock según nuevos items
+        for (const newItem of correctionItems) {
+            const productRef = db.collection('products').doc(newItem.productId.toString());
+            const product = products.find(p => p.id.toString() === newItem.productId.toString() || p.docId === newItem.productId.toString());
+            if (product) {
+                const newStock = (product.stock || 0) - newItem.quantity;
+                batch.update(productRef, { stock: newStock });
+                // Actualizar localmente
+                product.stock = newStock;
+            }
+        }
+
+        await batch.commit();
+
+        // Actualizar currentSale con datos corregidos
+        currentSale = {
+            ...currentSale,
+            customerName: newCustomerName,
+            details: newDetails,
+            subtotal: newSubtotal,
+            taxAmount: newTaxAmount,
+            total: newTotal
+        };
+
+        hideLoading();
+        closeCorrectionModal();
+
+        // Mostrar recibo actualizado
+        showReceipt();
+
+        // Actualizar vista de productos
+        renderCategoryTabs();
+        renderProducts();
+
+        showToast('✅ Venta corregida exitosamente');
+
+    } catch (error) {
+        console.error('Error guardando corrección:', error);
+        hideLoading();
+        showToast('❌ Error al guardar corrección');
+    }
+}
+
+/**
+ * Cancela una venta completamente
+ */
+async function cancelSaleCompletely() {
+    showLoading('Cancelando venta...');
+
+    try {
+        const db = firebase.firestore();
+        const batch = db.batch();
+
+        // Restaurar todo el stock
+        for (const item of originalSaleData.details) {
+            const productRef = db.collection('products').doc(item.productId.toString());
+            const product = products.find(p => p.id.toString() === item.productId.toString() || p.docId === item.productId.toString());
+            if (product) {
+                const newStock = (product.stock || 0) + item.quantity;
+                batch.update(productRef, { stock: newStock });
+                product.stock = newStock;
+            }
+        }
+
+        // Marcar venta como cancelada
+        const saleRef = db.collection('sales').doc(originalSaleData.id.toString());
+        batch.update(saleRef, {
+            status: 'cancelled',
+            cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await batch.commit();
+
+        hideLoading();
+        closeCorrectionModal();
+        closeReceiptModal();
+
+        // Actualizar vista de productos
+        renderCategoryTabs();
+        renderProducts();
+
+        showToast('🗑️ Venta cancelada - Stock restaurado');
+
+    } catch (error) {
+        console.error('Error cancelando venta:', error);
+        hideLoading();
+        showToast('❌ Error al cancelar venta');
+    }
+}
+
+// Hacer funciones globales para el HTML
+window.openCorrectionModal = openCorrectionModal;
+window.closeCorrectionModal = closeCorrectionModal;
+window.increaseCorrectionQty = increaseCorrectionQty;
+window.decreaseCorrectionQty = decreaseCorrectionQty;
+window.removeCorrectionItem = removeCorrectionItem;
+window.saveSaleCorrection = saveSaleCorrection;
+
+// ==================== MIS VENTAS DEL DÍA ====================
+
+let mySalesList = []; // Lista de ventas del día
+
+/**
+ * Carga las ventas del día actual
+ */
+async function loadMySales() {
+    const listContainer = document.getElementById('mySalesList');
+
+    try {
+        const db = firebase.firestore();
+
+        // Obtener inicio y fin del día actual
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStart = today.toISOString();
+
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const todayEnd = tomorrow.toISOString();
+
+        // Cargar ventas del día
+        const snapshot = await db.collection('sales')
+            .where('date', '>=', todayStart)
+            .where('date', '<', todayEnd)
+            .orderBy('date', 'desc')
+            .get();
+
+        mySalesList = snapshot.docs.map(doc => ({
+            ...doc.data(),
+            docId: doc.id
+        }));
+
+        // Filtrar ventas canceladas
+        const activeSales = mySalesList.filter(s => s.status !== 'cancelled');
+
+        // Actualizar resumen
+        updateMySalesSummary(activeSales);
+
+        // Actualizar badge
+        const badge = document.getElementById('mySalesBadge');
+        if (badge) {
+            badge.textContent = activeSales.length;
+            badge.style.display = activeSales.length > 0 ? 'inline' : 'none';
+        }
+
+        // Renderizar lista
+        renderMySales(mySalesList);
+
+    } catch (error) {
+        console.error('Error cargando mis ventas:', error);
+        listContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #dc3545;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 2rem;"></i>
+                <p>Error al cargar ventas</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Actualiza el resumen de ventas del día
+ */
+function updateMySalesSummary(sales) {
+    const totalAmount = sales.reduce((sum, s) => sum + (s.total || 0), 0);
+    const totalProducts = sales.reduce((sum, s) => {
+        return sum + (s.details || []).reduce((pSum, item) => pSum + (item.quantity || 0), 0);
+    }, 0);
+
+    document.getElementById('mySalesTotalAmount').textContent = `$${totalAmount.toFixed(2)}`;
+    document.getElementById('mySalesCount').textContent = sales.length;
+    document.getElementById('mySalesProducts').textContent = totalProducts;
+}
+
+/**
+ * Renderiza la lista de ventas del día
+ */
+function renderMySales(sales) {
+    const container = document.getElementById('mySalesList');
+
+    if (sales.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <i class="fas fa-receipt" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                <p>No hay ventas hoy</p>
+                <p style="font-size: 0.85rem;">Las ventas que realices aparecerán aquí</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = sales.map(sale => {
+        const saleDate = new Date(sale.date);
+        const timeStr = saleDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+        const itemCount = (sale.details || []).reduce((sum, item) => sum + item.quantity, 0);
+
+        // Estado visual
+        let statusBadge = '';
+        let cardStyle = 'border-left: 4px solid #28a745;'; // Verde por defecto
+
+        if (sale.status === 'cancelled') {
+            statusBadge = '<span style="background: #dc3545; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">CANCELADA</span>';
+            cardStyle = 'border-left: 4px solid #dc3545; opacity: 0.7;';
+        } else if (sale.status === 'pending') {
+            statusBadge = '<span style="background: #ffc107; color: #212529; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">CRÉDITO</span>';
+            cardStyle = 'border-left: 4px solid #ffc107;';
+        }
+
+        return `
+            <div style="background: white; border: 1px solid #eee; border-radius: 10px; padding: 15px; margin-bottom: 10px; ${cardStyle}">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div>
+                        <div style="font-weight: 600; color: #333;">
+                            Venta #${sale.id} ${statusBadge}
+                        </div>
+                        <div style="font-size: 0.85rem; color: #666;">
+                            <i class="fas fa-clock"></i> ${timeStr} • 
+                            <i class="fas fa-user"></i> ${sale.customerName || 'Sin nombre'}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.2rem; font-weight: bold; color: #28a745;">
+                            $${(sale.total || 0).toFixed(2)}
+                        </div>
+                        <div style="font-size: 0.8rem; color: #666;">
+                            ${itemCount} producto${itemCount !== 1 ? 's' : ''}
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">
+                    ${(sale.details || []).map(item => `${item.quantity}x ${item.name}`).join(' • ')}
+                </div>
+                
+                ${sale.status !== 'cancelled' ? `
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="openSaleFromHistory('${sale.docId}')" 
+                            style="flex: 1; padding: 8px; border: none; background: #007bff; color: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+                            <i class="fas fa-eye"></i> Ver Ticket
+                        </button>
+                        <button onclick="openCorrectionFromHistory('${sale.docId}')" 
+                            style="flex: 1; padding: 8px; border: none; background: #ffc107; color: #212529; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+                            <i class="fas fa-edit"></i> Corregir
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Abre el ticket de una venta desde el historial
+ */
+function openSaleFromHistory(docId) {
+    const sale = mySalesList.find(s => s.docId === docId);
+    if (!sale) {
+        showToast('Venta no encontrada');
+        return;
+    }
+
+    // Establecer la venta actual
+    currentSale = {
+        ...sale,
+        formattedDate: new Date(sale.date).toLocaleString('es-MX')
+    };
+
+    // Mostrar el recibo
+    showReceipt();
+}
+
+/**
+ * Abre el modal de corrección desde el historial
+ */
+function openCorrectionFromHistory(docId) {
+    const sale = mySalesList.find(s => s.docId === docId);
+    if (!sale) {
+        showToast('Venta no encontrada');
+        return;
+    }
+
+    // Establecer la venta actual
+    currentSale = {
+        ...sale,
+        formattedDate: new Date(sale.date).toLocaleString('es-MX')
+    };
+
+    // Abrir modal de corrección
+    openCorrectionModal();
+}
+
+// Hacer funciones globales para el HTML
+window.loadMySales = loadMySales;
+window.openSaleFromHistory = openSaleFromHistory;
+window.openCorrectionFromHistory = openCorrectionFromHistory;
